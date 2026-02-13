@@ -215,6 +215,28 @@ Windows (PowerShell as Administrator):
 netsh advfirewall firewall add rule name="NeuroLink" dir=in action=allow protocol=tcp localport=3000
 ```
 
+### nixos-sys
+
+Enable and configure firewall in your NixOS system config:
+
+```nix
+networking.firewall = {
+  enable = true;
+  # Only open ports you actually need
+  allowedTCPPorts = [ 3000 8080 5173 ];  # Uncomment for web dev
+  # allowedUDPPorts = [ ];
+
+  # Log dropped packets (useful for debugging)
+  logRefusedConnections = true;
+};
+```
+
+Install globally with npm:
+
+```bash
+npm install -g neurolink
+```
+
 ## Troubleshooting
 
 ### No devices found
