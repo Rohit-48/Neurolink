@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
@@ -15,7 +16,7 @@ const execAsync = promisify(exec);
 const program = new Command();
 
 program
-  .name('nerolink')
+  .name('neurolink')
   .description('Local network file sharing with device discovery')
   .version('2.0.0')
   .option('-p, --port <port>', 'Port to run the server on', '3000')
@@ -39,7 +40,17 @@ async function interactiveMode(options: any) {
     port
   });
   
-  console.log('\n' + styleText(['bold', 'green'], '📡 NeroLink Server Started'));
+  // Display ASCII logo
+  console.log('');
+  console.log(styleText('cyan', '      o---o       o---o       o---o'));
+  console.log(styleText('blue', '     / \\ / \\     / \\ / \\     / \\ / \\'));
+  console.log(styleText('magenta', 'o---o   N E U R O L I N K   o---o'));
+  console.log(styleText('blue', '     \\ / \\ /     \\ / \\ /     \\ / \\ /'));
+  console.log(styleText('cyan', '      o---o       o---o       o---o'));
+  console.log('');
+  console.log(styleText('green', '      Local Network File Sharing v2.0.0'));
+  console.log('');
+  
   console.log(styleText('gray', 'Directory: ') + styleText('cyan', directory));
   console.log(styleText('gray', 'Port: ') + styleText('cyan', port.toString()));
   console.log(styleText('gray', 'Device: ') + styleText('cyan', deviceName));
@@ -73,7 +84,7 @@ async function showMainMenu(discovery: DeviceDiscovery, port: number, directory:
   while (true) {
     const inquirerMod = await import('inquirer');
     const { action } = await inquirerMod.default.prompt([{
-      type: 'list',
+      type: 'rawlist',
       name: 'action',
       message: 'What would you like to do?',
       choices,
@@ -105,7 +116,7 @@ async function handleSend(discovery: DeviceDiscovery) {
   const devices = discovery.getDevices();
   
   if (devices.length === 0) {
-    console.log('\n' + styleText('yellow', '⚠️  No devices found. Make sure other devices are running nerolink.'));
+    console.log('\n' + styleText('yellow', '⚠️  No devices found. Make sure other devices are running neurolink.'));
     return;
   }
 
@@ -116,7 +127,7 @@ async function handleSend(discovery: DeviceDiscovery) {
 
   const inquirerMod = await import('inquirer');
   const { selectedDevice } = await inquirerMod.default.prompt([{
-    type: 'list',
+    type: 'rawlist',
     name: 'selectedDevice',
     message: 'Select a device to send files to:',
     choices: deviceChoices

@@ -1,16 +1,22 @@
 {
-  "name": "nerolink",
+  "name": "neurolink",
   "version": "2.0.0",
   "type": "module",
   "bin": {
-    "nerolink": "./dist/cli.js",
-    "neroshare": "./dist/share.js"
+    "neurolink": "./dist/cli.js",
+    "neuroshare": "./dist/share.js"
   },
   "scripts": {
     "start": "node dist/cli.js",
     "build": "tsc",
-    "dev": "tsx watch src/cli.ts"
+    "dev": "tsx watch src/cli.ts",
+    "prepare": "npm run build"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "ascii-logo.txt"
+  ],
   "dependencies": {
     "@hono/node-server": "^1.13.8",
     "@types/archiver": "^7.0.0",

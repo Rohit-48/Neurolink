@@ -1,13 +1,13 @@
 import bonjour from 'bonjour';
 import { EventEmitter } from 'events';
 
-const SERVICE_TYPE = 'nerolink';
+const SERVICE_TYPES = ['neurolink', 'nerolink'];
 const SERVICE_PROTOCOL = 'tcp';
 
 export class DeviceDiscovery extends EventEmitter {
   private bonjour: bonjour.Bonjour;
-  private browser: bonjour.Browser | null = null;
-  private service: bonjour.Service | null = null;
+  private browsers: bonjour.Browser[] = [];
+  private services: bonjour.Service[] = [];
   private devices: Map<string, DeviceInfo> = new Map();
 
   constructor() {
@@ -16,42 +16,64 @@ export class DeviceDiscovery extends EventEmitter {
   }
 
   startAdvertising(name: string, port: number) {
-    this.service = this.bonjour.publish({
-      name: name,
-      type: SERVICE_TYPE,
-      protocol: SERVICE_PROTOCOL,
-      port: port,
-      txt: {
-        version: '2.0.0',
-        platform: process.platform
-      }
-    });
+    for (const serviceType of SERVICE_TYPES) {
+      const service = this.bonjour.publish({
+        name: name,
+        type: serviceType,
+        protocol: SERVICE_PROTOCOL,
+        port: port,
+        txt: {
+          version: '2.0.0',
+          platform: process.platform
+        }
+      });
 
-    this.service.on('up', () => {
-      console.log(`📡 Advertising as "${name}" on port ${port}`);
-    });
+      service.on('up', () => {
+        if (serviceType === SERVICE_TYPES[0]) {
+          console.log(`📡 Advertising as "${name}" on port ${port}`);
+        }
+      });
+
+      this.services.push(service);
+    }
   }
 
   startDiscovery() {
-    this.browser = this.bonjour.find({ type: SERVICE_TYPE, protocol: SERVICE_PROTOCOL });
+    const makeKey = (service: any) =>
+      `${service.name}|${service.host || service.addresses?.[0] || 'unknown'}|${service.port}`;
 
-    this.browser.on('up', (service: any) => {
-      const device: DeviceInfo = {
-        name: service.name,
-        host: service.host || service.addresses?.[0] || 'unknown',
-        port: service.port,
-        addresses: service.addresses || [],
-        txt: service.txt || {}
-      };
+    for (const serviceType of SERVICE_TYPES) {
+      const browser = this.bonjour.find({ type: serviceType, protocol: SERVICE_PROTOCOL });
 
-      this.devices.set(service.name, device);
-      this.emit('deviceUp', device);
-    });
+      browser.on('up', (service: any) => {
+        const key = makeKey(service);
+        if (this.devices.has(key)) {
+          return;
+        }
 
-    this.browser.on('down', (service: any) => {
-      this.devices.delete(service.name);
-      this.emit('deviceDown', service.name);
-    });
+        const device: DeviceInfo = {
+          name: service.name,
+          host: service.host || service.addresses?.[0] || 'unknown',
+          port: service.port,
+          addresses: service.addresses || [],
+          txt: service.txt || {}
+        };
+
+        this.devices.set(key, device);
+        this.emit('deviceUp', device);
+      });
+
+      browser.on('down', (service: any) => {
+        const key = makeKey(service);
+        if (!this.devices.has(key)) {
+          return;
+        }
+        this.devices.delete(key);
+        this.emit('deviceDown', service.name);
+      });
+
+      this.browsers.push(browser);
+    }
   }
 
   getDevices(): DeviceInfo[] {
@@ -59,12 +81,17 @@ export class DeviceDiscovery extends EventEmitter {
   }
 
   stop() {
-    if (this.browser) {
-      this.browser.stop();
+    for (const browser of this.browsers) {
+      browser.stop();
     }
-    if (this.service) {
-      this.service.stop();
+
+    for (const service of this.services) {
+      service.stop();
     }
+
+    this.browsers = [];
+    this.services = [];
+
     this.bonjour.destroy();
   }
 }

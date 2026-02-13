@@ -1,24 +1,38 @@
-# NeroLink
+# NeuroLink
 
-Local network file sharing with device discovery, web interface, and CLI tools.
+NeuroLink is a local network file sharing tool for desktop and mobile devices.
+It includes:
 
-## Overview
+- `neurolink`: server process with interactive menu and web UI
+- `neuroshare`: client CLI for sending files from terminal
 
-NeroLink enables peer-to-peer file sharing across devices on the same local network. It provides both a web-based interface accessible via browsers and command-line tools for programmatic file transfers.
+## Features
+
+- Local file transfer over HTTP
+- Automatic device discovery on local network
+- Direct host mode when discovery is unavailable
+- Browser-based upload and download UI
+- Session-based grouping of uploaded files
+
+## Requirements
+
+- Node.js 18 or later
+- npm
+- Devices connected to the same local network
 
 ## Installation
 
-### Global Installation
+### Global install from npm
 
 ```bash
-npm install -g nerolink
+npm install -g neurolink
 ```
 
-### Local Installation
+### Local development install
 
 ```bash
 git clone <repository-url>
-cd nerolink
+cd neurolink
 npm install
 npm run build
 npm link
@@ -26,383 +40,233 @@ npm link
 
 ## Quick Start
 
-### Start the Server
+### 1. Start server
 
 ```bash
-nerolink
+neurolink
 ```
 
-This starts the file sharing server on port 3000 and opens an interactive menu.
+Default settings:
 
-### Send Files
+- Port: `3000`
+- Shared directory: `./shared`
+- Device name: system hostname
+
+### 2. Open web UI
+
+Open in browser:
+
+```text
+http://<server-ip>:3000
+```
+
+### 3. Send files from terminal
 
 ```bash
-neroshare send /path/to/file.pdf
+neuroshare send ./file.pdf
 ```
 
-## Architecture
+## CLI Reference
 
-NeroLink operates on a client-server model where:
+### `neurolink`
 
-- **Server (nerolink)**: Receives files, hosts web interface, advertises presence on network
-- **Client (neroshare)**: Discovers servers and sends files
-
-### Network Requirements
-
-- All devices must be on the same local network (WiFi/LAN)
-- Firewall must allow connections on the configured port (default: 3000)
-- mDNS/Bonjour service discovery for automatic device detection
-
-## Command Line Interface
-
-### nerolink
-
-Start the file sharing server with interactive mode.
+Start the server and interactive menu.
 
 ```bash
-nerolink [options]
+neurolink [options]
 ```
 
-**Options:**
+Options:
 
-- `-p, --port <port>`: Port to run server on (default: 3000)
-- `-d, --directory <dir>`: Directory to share files from (default: ./shared)
-- `-n, --name <name>`: Device name for discovery (default: system hostname)
-- `-V, --version`: Display version number
-- `-h, --help`: Display help
+- `-p, --port <port>`: server port (default `3000`)
+- `-d, --directory <dir>`: shared directory (default `./shared`)
+- `-n, --name <name>`: device name shown in discovery
+- `-V, --version`: show version
+- `-h, --help`: show help
 
-**Interactive Commands:**
+Interactive menu actions:
 
-When running without arguments, nerolink presents an interactive menu:
+1. Send files to a discovered device
+2. List discovered devices
+3. Open web UI URL
+4. Show server network information
+5. Exit
 
-1. **Send files to a device**: Select discovered device and send files
-2. **List available devices**: Show all nerolink instances on network
-3. **Open Web UI**: Launch browser to web interface
-4. **Show server info**: Display network URLs and configuration
-5. **Exit**: Stop server and exit
+### `neuroshare`
 
-### neroshare
-
-Send files to devices on the network.
+Send files to another device.
 
 ```bash
-neroshare <command> [options]
+neuroshare <command> [options]
 ```
 
-#### Commands
+Commands:
 
-**send**
-
-Send files or directories to a target device.
+### `send`
 
 ```bash
-neroshare send <paths...> [options]
+neuroshare send <paths...> [options]
 ```
 
-**Options:**
+Options:
 
-- `-d, --device <name>`: Target device name (auto-discover if not specified)
-- `-h, --host <host>`: Target host IP address (bypasses discovery)
-- `-p, --port <port>`: Target port (default: 3000)
+- `-d, --device <name>`: target discovered device name
+- `-h, --host <host>`: direct host IP or hostname
+- `-p, --port <port>`: target port (default `3000`)
 
-**Examples:**
+Examples:
 
 ```bash
-# Send single file
-neroshare send document.pdf
+# single file
+neuroshare send report.pdf
 
-# Send multiple files
-neroshare send photo1.jpg photo2.png document.pdf
+# multiple files
+neuroshare send a.jpg b.png c.pdf
 
-# Send to specific device by name
-neroshare send file.zip --device "My-Laptop"
+# by discovered device name
+neuroshare send archive.zip --device "Laptop"
 
-# Send to specific IP address
-neroshare send video.mp4 --host 192.168.1.100 --port 3000
+# direct host mode
+neuroshare send "New Project.png" --host 192.168.0.103 --port 3000
 ```
 
-**devices**
-
-List available devices on the network.
+### `devices`
 
 ```bash
-neroshare devices [options]
+neuroshare devices [options]
 ```
 
-**Options:**
+Options:
 
-- `-t, --timeout <seconds>`: Discovery timeout in seconds (default: 5)
+- `-t, --timeout <seconds>`: discovery timeout (default `5`)
 
-## Web Interface
+## Network and Discovery
 
-Access the web interface by navigating to:
+NeuroLink uses mDNS/Bonjour service discovery.
 
-```
+Service types:
+
+- `_neurolink._tcp`
+- `_nerolink._tcp` (legacy compatibility)
+
+Notes:
+
+- Discovery can fail on guest WiFi, VPN, or isolated hotspot networks.
+- If discovery fails, use direct host mode with `--host` and `--port`.
+
+## Web API
+
+Base URL:
+
+```text
 http://<server-ip>:<port>
 ```
 
-Example:
-```
-http://192.168.1.100:3000
-```
+Endpoints:
 
-### Features
+- `GET /`: web UI
+- `GET /api/files`: list files
+- `GET /api/files/grouped`: list files grouped by upload session
+- `GET /api/files/:name`: download one file
+- `POST /api/upload`: upload one file (multipart form field: `file`)
+- `DELETE /api/files/:name`: delete one file
+- `GET /api/download-all`: download all files as zip
+- `GET /api/download-session/:timestamp`: download one upload session as zip
 
-- **Drag and Drop Upload**: Drag files directly into browser window
-- **File Organization**: Files grouped by upload sessions (5-minute window)
-- **Category Sorting**: Photos, videos, and other files sorted separately
-- **Session Management**: Download all files from specific upload sessions
-- **Mobile Responsive**: Optimized for phones and tablets
+## File Categorization
 
-### Supported File Types
+Grouped session output classifies files into:
 
-The web interface supports all file types including:
+1. Photos
+2. Videos
+3. Files
 
-- **Images**: jpg, jpeg, png, gif, webp, svg, bmp, tiff, raw, psd
-- **Videos**: mp4, mov, avi, mkv, wmv, flv, webm, m4v, mpg, mpeg
-- **Audio**: mp3, wav, flac, m4a, aac, ogg, wma
-- **Documents**: pdf, doc, docx, txt, md, xls, xlsx, ppt, pptx
-- **Archives**: zip, rar, 7z, tar, gz
-- **Code**: js, ts, py, html, css, json, xml, and more
-
-## REST API
-
-### Endpoints
-
-#### GET /
-Returns the web interface HTML.
-
-#### GET /api/files
-List all shared files.
-
-**Response:**
-```json
-{
-  "files": [
-    {
-      "name": "example.pdf",
-      "size": 1048576,
-      "modified": "2026-02-13T10:00:00.000Z",
-      "type": "application/pdf"
-    }
-  ]
-}
-```
-
-#### GET /api/files/grouped
-Get files organized by upload sessions.
-
-**Response:**
-```json
-{
-  "sessions": [
-    {
-      "timestamp": "2026-02-13T10:00:00.000Z",
-      "files": [
-        {
-          "name": "photo.jpg",
-          "size": 2048000,
-          "modified": "2026-02-13T10:00:00.000Z",
-          "type": "image/jpeg"
-        }
-      ]
-    }
-  ]
-}
-```
-
-#### GET /api/files/:name
-Download a specific file.
-
-#### POST /api/upload
-Upload a file.
-
-**Request:** Multipart form data with file field
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "File uploaded successfully",
-  "file": "uploaded-file.pdf"
-}
-```
-
-#### DELETE /api/files/:name
-Delete a specific file.
-
-#### GET /api/download-all
-Download all files as a ZIP archive.
-
-#### GET /api/download-session/:timestamp
-Download all files from a specific session as ZIP.
-
-## Device Discovery
-
-NeroLink uses mDNS/Bonjour (zero-configuration networking) to discover devices:
-
-- Service Type: `_nerolink._tcp`
-- Automatic discovery within local network
-- No manual IP configuration required
-- Works across platforms (Linux, macOS, Windows)
-
-## Session Grouping
-
-Files uploaded within a 5-minute window are grouped into a session. This allows:
-
-- Logical organization of batch uploads
-- Separate download per session
-- Time-based file management
-
-Sessions are displayed in reverse chronological order (newest first).
-
-## File Categories
-
-Within each session, files are sorted into categories:
-
-1. **Photos**: Image files (jpg, png, gif, etc.)
-2. **Videos**: Video files (mp4, mov, avi, etc.)
-3. **Files**: All other file types
+Classification is extension-based.
 
 ## Configuration
 
-### Environment Variables
+Environment variables:
 
-- `NEROLINK_PORT`: Default port (overridden by --port)
-- `NEROLINK_DIR`: Default directory (overridden by --directory)
-- `NEROLINK_NAME`: Default device name (overridden by --name)
+- `NEROLINK_PORT`
+- `NEROLINK_DIR`
+- `NEROLINK_NAME`
 
-### Firewall Configuration
+CLI options override environment variables.
 
-Allow incoming connections on the chosen port:
+## Firewall
 
-**Linux (UFW):**
+Allow incoming TCP on selected server port.
+
+Linux (ufw):
+
 ```bash
 sudo ufw allow 3000/tcp
 ```
 
-**Linux (iptables):**
+Linux (iptables):
+
 ```bash
 sudo iptables -I INPUT -p tcp --dport 3000 -j ACCEPT
 ```
 
-**Windows (PowerShell Admin):**
+Windows (PowerShell as Administrator):
+
 ```powershell
-netsh advfirewall firewall add rule name="NeroLink" dir=in action=allow protocol=tcp localport=3000
+netsh advfirewall firewall add rule name="NeuroLink" dir=in action=allow protocol=tcp localport=3000
 ```
 
 ## Troubleshooting
 
 ### No devices found
 
-1. Verify both devices are on the same network
-2. Check firewall settings
-3. Ensure nerolink is running on target device
-4. Try using IP address directly: `neroshare send file.pdf --host 192.168.x.x`
+1. Verify both devices are on the same subnet.
+2. Check firewall on both devices.
+3. Disable VPN on both devices.
+4. Test direct host mode with `neuroshare send ... --host ... --port ...`.
 
-### Cannot connect to web interface
+### Cannot access web UI
 
-1. Verify server is running: `nerolink`
-2. Check firewall allows port 3000
-3. Try different port: `nerolink --port 8080`
-4. Verify IP address is correct
+1. Confirm server is running.
+2. Confirm target IP address and port.
+3. Check firewall rules.
 
-### File upload fails
+### Upload fails
 
-1. Check disk space on server
-2. Verify write permissions on shared directory
-3. Check file size limits (no limit by default)
+1. Verify write permission for shared directory.
+2. Check disk space.
+3. Check file path and file name.
 
 ## Development
 
-### Build
+Build:
 
 ```bash
 npm run build
 ```
 
-### Development Mode
+Watch mode:
 
 ```bash
 npm run dev
 ```
 
-### Project Structure
+Project layout:
 
+```text
+neurolink/
+  src/
+    cli.ts
+    share.ts
+    server.ts
+    discovery.ts
+    sender.ts
+    network.ts
+  dist/
+  package.json
 ```
-nerolink/
-├── src/
-│   ├── cli.ts          # Interactive CLI
-│   ├── share.ts        # Send CLI
-│   ├── server.ts       # Hono server and web UI
-│   ├── discovery.ts    # mDNS device discovery
-│   ├── sender.ts       # File transfer logic
-│   └── network.ts      # Network utilities
-├── dist/               # Compiled JavaScript
-└── package.json
-```
 
-### Dependencies
+## Security
 
-**Runtime:**
-- hono: Web framework
-- @hono/node-server: Node.js server adapter
-- archiver: ZIP file creation
-- bonjour: mDNS service discovery
-- inquirer: Interactive CLI prompts
-- commander: CLI argument parsing
-- qrcode: QR code generation
-- mime-types: MIME type detection
-
-**Development:**
-- TypeScript: Type checking and compilation
-- tsx: TypeScript execution for development
-
-## Security Considerations
-
-- NeroLink is designed for trusted local networks only
-- No authentication mechanism (intentionally simple)
-- Files are shared as-is without encryption in transit
-- Do not expose to public internet
-- Use firewall rules to restrict access if needed
-
-## Platform Support
-
-- **Linux**: Full support (tested on Ubuntu, Fedora, Arch)
-- **macOS**: Full support (Bonjour included)
-- **Windows**: Full support (Bonjour service required)
-- **Mobile**: Web interface only (no CLI support)
-
-## Browser Compatibility
-
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-- Mobile Safari (iOS 14+)
-- Chrome Mobile (Android 10+)
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome. Please ensure:
-
-1. Code follows existing style
-2. All tests pass
-3. Documentation is updated
-4. Commit messages are descriptive
-
-## Changelog
-
-### 2.0.0
-
-- Initial release
-- Interactive CLI mode
-- Device discovery via mDNS
-- Web interface with session grouping
-- File categorization (photos, videos, files)
-- Session-based download
-- Mobile responsive design
-- Dark theme UI
+- Designed for trusted local networks.
+- No authentication layer by default.
+- Do not expose service to public internet.

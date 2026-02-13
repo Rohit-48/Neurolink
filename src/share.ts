@@ -10,7 +10,7 @@ import ora from 'ora';
 const program = new Command();
 
 program
-  .name('neroshare')
+  .name('neuroshare')
   .description('Send files to devices on your local network')
   .version('2.0.0');
 
@@ -57,7 +57,7 @@ async function sendCommand(paths: string[], options: any) {
     process.exit(1);
   }
 
-  console.log(styleText('bold', '\n📤 NeroShare'));
+  console.log(styleText('bold', '\n📤 NeuroShare'));
   console.log(styleText('gray', `Sending ${filePaths.length} file(s)...\n`));
 
   // Determine target device
@@ -86,7 +86,7 @@ async function sendCommand(paths: string[], options: any) {
 
     if (!device) {
       console.log(styleText('red', `\nError: Device "${options.device}" not found.`));
-      console.log(styleText('gray', 'Run "neroshare devices" to see available devices.'));
+      console.log(styleText('gray', 'Run "neuroshare devices" to see available devices.'));
       process.exit(1);
     }
 
@@ -105,7 +105,7 @@ async function sendCommand(paths: string[], options: any) {
 
     if (devices.length === 0) {
       console.log(styleText('red', '\nError: No devices found on the network.'));
-      console.log(styleText('gray', 'Make sure the target device is running nerolink.'));
+      console.log(styleText('gray', 'Make sure the target device is running neurolink.'));
       process.exit(1);
     }
 
@@ -115,7 +115,7 @@ async function sendCommand(paths: string[], options: any) {
     } else {
       const inquirer = await import('inquirer');
       const { selectedDevice } = await inquirer.default.prompt([{
-        type: 'list',
+        type: 'rawlist',
         name: 'selectedDevice',
         message: 'Select a device:',
         choices: devices.map(d => ({
@@ -155,7 +155,7 @@ async function listDevicesCommand(timeoutSeconds: number) {
 
   if (devices.length === 0) {
     console.log(styleText('yellow', 'No devices found.'));
-    console.log(styleText('gray', 'Make sure other devices are running nerolink.'));
+    console.log(styleText('gray', 'Make sure other devices are running neurolink.'));
   } else {
     console.log(styleText(['bold'], `Found ${devices.length} device(s):\n`));
     
