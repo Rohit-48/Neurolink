@@ -9,7 +9,16 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["./*"],
+      "@/types/*": ["./types/*"],
+      "@/core/*": ["./core/*"],
+      "@/utils/*": ["./utils/*"],
+      "@/server/*": ["./server/*"],
+      "@/cli/*": ["./cli/*"]
+    },
+    "baseUrl": "./src"
   },
   "include": ["src/**/*"]
 }
