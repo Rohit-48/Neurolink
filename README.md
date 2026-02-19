@@ -1,10 +1,24 @@
-# NeuroLink
+# NeuroLink v2.0.0 🚀
 
-NeuroLink is a local network file sharing tool for desktop and mobile devices.
-It includes:
+High-performance local network file sharing with chunked transfers and device discovery.
 
-- `neurolink`: server process with interactive menu and web UI
-- `neuroshare`: client CLI for sending files from terminal
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Rohit-48/Neurolink/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+## What's New in v2.0
+
+- ⚡ **Rust-Powered Performance** - 2-5x faster file transfers with chunked uploads
+- 🔐 **SHA-256 Verification** - Every chunk hash-verified for integrity  
+- 📊 **Progress Tracking** - Real-time progress bars in CLI
+- 🔄 **Concurrent Uploads** - Multiple chunks simultaneously
+- 🎯 **Smart Chunking** - Automatic 1MB chunks for optimal performance
+- 💻 **Pure Rust CLI** - Static binary, no Node.js needed for client
+
+## Components
+
+- **`neurolinkd`** - High-performance Rust server (port 3030)
+- **`neuroshare`** - Rust CLI client with progress bars
+- **`neurolink`** - Node.js server with web UI (port 3000) - optional
 
 ## Features
 
@@ -67,95 +81,90 @@ NeuroLink v2 uses a hybrid architecture:
 - npm
 - Devices connected to the same local network
 
-## Installation
+## Quick Installation
 
-### Prerequisites
+### Option 1: Pre-built Binaries (Recommended)
 
-- Node.js 18+ and npm
-- Rust toolchain (for Rust microservice)
-
-### Install Rust components
+Download from [GitHub Releases](https://github.com/Rohit-48/Neurolink/releases):
 
 ```bash
-cd rust-service
-cargo build --release
+# Linux/macOS
+curl -L https://github.com/Rohit-48/Neurolink/releases/download/v2.0.0/neurolink-v2.0.0-linux.tar.gz | tar xz
+sudo mv neurolinkd neuroshare /usr/local/bin/
 
-# Copy binaries to PATH
-cp target/release/neurolinkd ~/.local/bin/
-cp target/release/neuroshare ~/.local/bin/
+# Or install to user directory
+mv neurolinkd neuroshare ~/.local/bin/
 ```
 
-### Global install from npm
+### Option 2: Build from Source
+
+**Requirements:** Rust 1.70+ and Node.js 18+ (optional, for web UI)
+
+```bash
+git clone https://github.com/Rohit-48/Neurolink.git
+cd Neurolink/rust-service
+
+# Build Rust components
+cargo build --release
+
+# Install to PATH
+cp target/release/neurolinkd ~/.local/bin/
+cp target/release/neuroshare ~/.local/bin/
+
+# Optional: Install Node.js web UI
+cd ..
+npm install -g .
+```
+
+### Option 3: npm (Node.js only, v1.x compatible)
 
 ```bash
 npm install -g neurolink
 ```
 
-### Local development install
-
-```bash
-git clone <repository-url>
-cd neurolink
-
-# Install Node.js components
-npm install
-npm run build
-npm link
-
-# Install Rust components
-cd rust-service
-cargo build --release
-```
+**Note:** npm install only provides the Node.js version. For full v2.0 performance, use Rust binaries.
 
 ## Quick Start
 
-### Option 1: Node.js Server (Full Stack)
+### Rust-Only Mode (Recommended)
 
-Start the Node.js server with web UI and discovery:
-
-```bash
-neurolink
-```
-
-Open web UI: `http://<server-ip>:3000`
-
-### Option 2: Rust Microservice (Performance Mode)
-
-Start the high-performance Rust file transfer service:
+Fastest performance, no Node.js required:
 
 ```bash
-# Terminal 1: Start Rust service
+# Terminal 1: Start Rust server
 neurolinkd
 
 # Terminal 2: Send files with progress bar
 neuroshare send ./large-file.zip --host localhost --port 3030
 ```
 
-### Complete Stack (Recommended)
+That's it! The Rust server provides the complete file transfer API.
 
-For best performance, run both services:
+### With Web UI (Optional)
+
+For browser-based upload/download:
 
 ```bash
-# Terminal 1: Node.js (Web UI + Discovery)
+# Terminal 1: Rust server (file transfers)
+neurolinkd --port 3030
+
+# Terminal 2: Node.js server (web UI)
 neurolink --port 3000
 
-# Terminal 2: Rust service (File Transfer)
-NEUROLINK_PORT=3030 neurolinkd
+# Access web UI at http://localhost:3000
 ```
-
-The Node.js service handles the web UI and device discovery, while the Rust service handles high-performance file transfers via chunked uploads.
 
 ### Configuration
 
-**Node.js service:**
+**Rust service (primary):**
+- Port: `3030` (default)
+- Storage: `./shared` (created automatically)
+- Chunk size: 1MB (configurable via `--chunk-size`)
+
+**Node.js service (optional, for web UI):**
 - Port: `3000` (default)
 - Shared directory: `./shared`
 - Device name: system hostname
-
-**Rust service:**
-- Port: `3030` (default)
-- Storage: `./shared`
-- Chunk size: 1MB (configurable)
 
 ## CLI Reference
 
