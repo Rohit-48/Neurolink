@@ -216,6 +216,14 @@ neuroshare send ./large-file.zip --host localhost --port 8000
 
 That's it! The Rust server provides the complete file transfer API.
 
+For mobile devices on the same Wi-Fi, open:
+
+```text
+http://<your-computer-lan-ip>:8000
+```
+
+Do not use `http://0.0.0.0:8000` in a browser. `0.0.0.0` is only a server bind address.
+
 ### With Web UI (Optional)
 
 For browser-based upload/download:

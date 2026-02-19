@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr, UdpSocket};
 use std::sync::Arc;
 use axum::Router;
 use tokio::signal;
@@ -11,6 +11,14 @@ mod api;
 mod hashing;
 
 use transfer::TransferManager;
+
+fn detect_lan_ip() -> Option<IpAddr> {
+    // UDP connect lets us inspect the preferred outbound interface IP.
+    let socket = UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("8.8.8.8:80").ok()?;
+    let local_addr = socket.local_addr().ok()?;
+    (!local_addr.ip().is_loopback()).then_some(local_addr.ip())
+}
 
 #[tokio::main]
 async fn main() {
@@ -54,7 +62,13 @@ async fn main() {
 
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
 
-    info!("Server starting on http://{}", addr);
+    info!("Server bind address: http://{}", addr);
+    info!("Local access URL: http://localhost:{}", port);
+    match detect_lan_ip() {
+        Some(ip) => info!("Mobile/LAN access URL: http://{}:{}", ip, port),
+        None => warn!("Could not determine LAN IP. Use your machine IP like http://192.168.x.x:{} from mobile", port),
+    }
+    info!("Note: 0.0.0.0 is a listen address, not a browser URL.");
 
     // Start server with graceful shutdown
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
