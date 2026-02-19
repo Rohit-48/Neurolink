@@ -233,7 +233,7 @@ neurolink --port 3000
 ### Configuration
 
 **Rust service (primary):**
-- Port: `3030` (default)
+- Port: `8000` (default)
 - Storage: `./shared` (created automatically)
 - Chunk size: 1MB (configurable via `--chunk-size`)
 

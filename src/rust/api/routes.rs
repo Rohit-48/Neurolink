@@ -1,7 +1,7 @@
 use axum::{
     extract::{Multipart, State},
     http::StatusCode,
-    response::{Html, Json},
+    response::{Html, IntoResponse, Json},
     routing::{post, get},
     Router,
 };
@@ -104,37 +104,46 @@ async fn health_check() -> Json<ApiResponse<String>> {
 async fn init_transfer(
     State(manager): State<Arc<TransferManager>>,
     Json(req): Json<InitTransferRequest>,
-) -> Result<Json<ApiResponse<InitTransferResponse>>, StatusCode> {
+) -> impl IntoResponse {
     info!("Init transfer request: {} ({} bytes)", req.filename, req.total_size);
 
     // Validate chunk_size is not zero to prevent division by zero
     if req.chunk_size == 0 {
-        return Ok(Json(ApiResponse {
-            success: false,
-            data: None,
-            error: Some("Invalid chunk_size: must be greater than 0".to_string()),
-        }));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid chunk_size: must be greater than 0".to_string()),
+            }),
+        );
     }
 
     match manager.init_transfer(req.filename, req.total_size, req.chunk_size).await {
         Ok(transfer_id) => {
             let total_chunks = ((req.total_size + req.chunk_size as u64 - 1) / req.chunk_size as u64) as usize;
-            Ok(Json(ApiResponse {
-                success: true,
-                data: Some(InitTransferResponse {
-                    transfer_id,
-                    total_chunks,
+            (
+                StatusCode::OK,
+                Json(ApiResponse {
+                    success: true,
+                    data: Some(InitTransferResponse {
+                        transfer_id,
+                        total_chunks,
+                    }),
+                    error: None,
                 }),
-                error: None,
-            }))
+            )
         }
         Err(e) => {
             error!("Failed to init transfer: {}", e);
-            Ok(Json(ApiResponse {
-                success: false,
-                data: None,
-                error: Some(e.to_string()),
-            }))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiResponse {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                }),
+            )
         }
     }
 }
@@ -259,5 +268,24 @@ async fn get_status(
             data: None,
             error: Some("Transfer not found".to_string()),
         })),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::Json;
+
+    #[tokio::test]
+    async fn init_transfer_zero_chunk_size_returns_bad_request() {
+        let manager = Arc::new(TransferManager::new("./test_shared"));
+        let req = InitTransferRequest {
+            filename: "test.txt".to_string(),
+            total_size: 1024,
+            chunk_size: 0,
+        };
+
+        let response = init_transfer(State(manager), Json(req)).await.into_response();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }
 }
