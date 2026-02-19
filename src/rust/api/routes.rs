@@ -107,6 +107,15 @@ async fn init_transfer(
 ) -> Result<Json<ApiResponse<InitTransferResponse>>, StatusCode> {
     info!("Init transfer request: {} ({} bytes)", req.filename, req.total_size);
 
+    // Validate chunk_size is not zero to prevent division by zero
+    if req.chunk_size == 0 {
+        return Ok(Json(ApiResponse {
+            success: false,
+            data: None,
+            error: Some("Invalid chunk_size: must be greater than 0".to_string()),
+        }));
+    }
+
     match manager.init_transfer(req.filename, req.total_size, req.chunk_size).await {
         Ok(transfer_id) => {
             let total_chunks = ((req.total_size + req.chunk_size as u64 - 1) / req.chunk_size as u64) as usize;

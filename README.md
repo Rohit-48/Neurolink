@@ -16,7 +16,7 @@ High-performance local network file sharing with chunked transfers and device di
 
 ## Components
 
-- **`neurolinkd`** - High-performance Rust server (port 3030)
+- **`neurolinkd`** - High-performance Rust server (port 8000)
 - **`neuroshare`** - Rust CLI client with progress bars
 - **`neurolink`** - Node.js server with web UI (port 3000) - optional
 
@@ -43,7 +43,7 @@ NeuroLink v2 uses a hybrid architecture:
 ┌─────────────────┐     HTTP      ┌──────────────────┐
 │   Node.js API   │ ◄────────────► │  Rust Service    │
 │   (Express)     │   localhost    │  (Axum + Tokio)  │
-│   Port 3000     │                │  Port 3030       │
+│   Port 3000     │                │  Port 8000       │
 └─────────────────┘                └──────────────────┘
         │                                   │
         ▼                                   ▼
@@ -93,7 +93,7 @@ Features:
 ┌─────────────────────────────────────┐
 │        neurolinkd (Rust)            │
 ├─────────────────────────────────────┤
-│  Axum HTTP Server (Port 3030)       │
+│  Axum HTTP Server (Port 8000)       │
 ├─────────────────────────────────────┤
 │  Transfer Manager                   │
 │  ├─ HashMap<TransferId, Transfer>  │
@@ -211,7 +211,7 @@ Fastest performance, no Node.js required:
 neurolinkd
 
 # Terminal 2: Send files with progress bar
-neuroshare send ./large-file.zip --host localhost --port 3030
+neuroshare send ./large-file.zip --host localhost --port 8000
 ```
 
 That's it! The Rust server provides the complete file transfer API.
@@ -222,7 +222,7 @@ For browser-based upload/download:
 
 ```bash
 # Terminal 1: Rust server (file transfers)
-neurolinkd --port 3030
+neurolinkd --port 8000
 
 # Terminal 2: Node.js server (web UI)
 neurolink --port 3000
@@ -320,12 +320,11 @@ Options:
 
 NeuroLink uses mDNS/Bonjour service discovery.
 
-Service types:
+**Service type:** `_neurolink._tcp`
 
-- `_neurolink._tcp`
-- `_nerolink._tcp` (legacy compatibility)
+The server advertises itself using the canonical service type `_neurolink._tcp`. Earlier versions (pre-v2.0) may have used `_nerolink._tcp` (typo), which is still supported for backwards compatibility during device discovery.
 
-Notes:
+**Notes:**
 
 - Discovery can fail on guest WiFi, VPN, or isolated hotspot networks.
 - If discovery fails, use direct host mode with `--host` and `--port`.
@@ -344,9 +343,9 @@ Base URL: `http://<host>:3000`
 - `DELETE /api/files/:name` - Delete file
 - `GET /api/download-all` - Download all as ZIP
 
-### Rust Microservice API (Port 3030)
+### Rust Microservice API (Port 8000)
 
-Base URL: `http://<host>:3030`
+Base URL: `http://<host>:8000`
 
 Chunked Transfer Endpoints:
 

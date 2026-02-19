@@ -79,6 +79,11 @@ impl TransferManager {
         total_size: u64,
         chunk_size: usize,
     ) -> Result<String> {
+        // Validate chunk_size to prevent division by zero
+        if chunk_size == 0 {
+            return Err(anyhow::anyhow!("chunk_size must be greater than 0"));
+        }
+
         let transfer_id = format!("trans_{}", Utc::now().timestamp_millis());
         let total_chunks = ((total_size + chunk_size as u64 - 1) / chunk_size as u64) as usize;
         
@@ -223,3 +228,6 @@ impl TransferManager {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;
