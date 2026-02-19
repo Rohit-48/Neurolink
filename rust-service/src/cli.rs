@@ -11,7 +11,7 @@ use anyhow::{Result, Context};
 #[derive(Parser)]
 #[command(name = "neuroshare")]
 #[command(about = "Send files to NeuroLink servers")]
-#[command(version = "1.0.0")]
+#[command(version = "2.0.0")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

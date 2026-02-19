@@ -3,8 +3,8 @@ use std::sync::Arc;
 use axum::Router;
 use tokio::signal;
 use tower_http::cors::CorsLayer;
-use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
+use tracing::{info, warn, error, Level};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 mod transfer;
 mod api;
@@ -14,15 +14,18 @@ use transfer::TransferManager;
 
 #[tokio::main]
 async fn main() {
-    // Initialize logging
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
-        .finish();
-    
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
+    // Initialize logging with filter
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info"));
 
-    info!("Starting NeuroLink Rust Microservice v1.0.0");
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(tracing_subscriber::fmt::layer().with_target(false))
+        .init();
+
+    info!("🚀 Starting NeuroLink Rust Microservice v2.0.0");
+    info!("📡 Local network file sharing with chunked transfers");
+    info!("");
 
     // Get configuration from environment or defaults
     let port = std::env::var("NEUROLINK_PORT")
