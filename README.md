@@ -8,11 +8,58 @@ It includes:
 
 ## Features
 
-- Local file transfer over HTTP
-- Automatic device discovery on local network
-- Direct host mode when discovery is unavailable
-- Browser-based upload and download UI
-- Session-based grouping of uploaded files
+- **Local file transfer** over HTTP
+- **Automatic device discovery** on local network (mDNS/Bonjour)
+- **High-performance Rust microservice** for chunked file transfers
+- **Progress tracking** with CLI progress bars
+- **SHA-256 verification** for all chunks
+- **Session-based grouping** of uploaded files
+- **Web UI** for browser-based upload/download
+- **Direct host mode** when discovery unavailable
+
+## Architecture
+
+NeuroLink v2 uses a hybrid architecture:
+
+- **Node.js (Express)**: Web UI, device discovery, session management
+- **Rust (Axum + Tokio)**: High-performance file transfer engine
+- **Communication**: HTTP/REST API between services
+
+```
+┌─────────────────┐     HTTP      ┌──────────────────┐
+│   Node.js API   │ ◄────────────► │  Rust Service    │
+│   (Express)     │   localhost    │  (Axum + Tokio)  │
+│   Port 3000     │                │  Port 3030       │
+└─────────────────┘                └──────────────────┘
+        │                                   │
+        ▼                                   ▼
+┌──────────────┐                    ┌──────────────┐
+│   Web UI     │                    │ Chunked File │
+│  (Browser)   │                    │   Storage    │
+└──────────────┘                    └──────────────┘
+```
+
+## Components
+
+### 1. Node.js Server (`neurolink`)
+- Interactive CLI menu
+- Web interface (HTML/CSS/JS)
+- mDNS device discovery
+- Session management
+- File metadata
+
+### 2. Rust Microservice (`neurolinkd`)
+- Chunked file transfers
+- SHA-256 hash verification
+- Async I/O with Tokio
+- Progress tracking
+- Compression ready
+
+### 3. CLI Client (`neuroshare`)
+- Send files from terminal
+- Progress bars
+- Host/port selection
+- Batch file upload
 
 ## Requirements
 
@@ -21,6 +68,22 @@ It includes:
 - Devices connected to the same local network
 
 ## Installation
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Rust toolchain (for Rust microservice)
+
+### Install Rust components
+
+```bash
+cd rust-service
+cargo build --release
+
+# Copy binaries to PATH
+cp target/release/neurolinkd ~/.local/bin/
+cp target/release/neuroshare ~/.local/bin/
+```
 
 ### Global install from npm
 
@@ -33,38 +96,66 @@ npm install -g neurolink
 ```bash
 git clone <repository-url>
 cd neurolink
+
+# Install Node.js components
 npm install
 npm run build
 npm link
+
+# Install Rust components
+cd rust-service
+cargo build --release
 ```
 
 ## Quick Start
 
-### 1. Start server
+### Option 1: Node.js Server (Full Stack)
+
+Start the Node.js server with web UI and discovery:
 
 ```bash
 neurolink
 ```
 
-Default settings:
+Open web UI: `http://<server-ip>:3000`
 
-- Port: `3000`
+### Option 2: Rust Microservice (Performance Mode)
+
+Start the high-performance Rust file transfer service:
+
+```bash
+# Terminal 1: Start Rust service
+neurolinkd
+
+# Terminal 2: Send files with progress bar
+neuroshare send ./large-file.zip --host localhost --port 3030
+```
+
+### Complete Stack (Recommended)
+
+For best performance, run both services:
+
+```bash
+# Terminal 1: Node.js (Web UI + Discovery)
+neurolink --port 3000
+
+# Terminal 2: Rust service (File Transfer)
+NEUROLINK_PORT=3030 neurolinkd
+```
+
+The Node.js service handles the web UI and device discovery, while the Rust service handles high-performance file transfers via chunked uploads.
+
+### Configuration
+
+**Node.js service:**
+- Port: `3000` (default)
 - Shared directory: `./shared`
 - Device name: system hostname
 
-### 2. Open web UI
-
-Open in browser:
-
-```text
-http://<server-ip>:3000
-```
-
-### 3. Send files from terminal
-
-```bash
-neuroshare send ./file.pdf
-```
+**Rust service:**
+- Port: `3030` (default)
+- Storage: `./shared`
+- Chunk size: 1MB (configurable)
 
 ## CLI Reference
 
@@ -154,24 +245,94 @@ Notes:
 - Discovery can fail on guest WiFi, VPN, or isolated hotspot networks.
 - If discovery fails, use direct host mode with `--host` and `--port`.
 
-## Web API
+## API Reference
 
-Base URL:
+### Node.js API (Port 3000)
 
-```text
-http://<server-ip>:<port>
+Base URL: `http://<host>:3000`
+
+- `GET /` - Web UI
+- `GET /api/files` - List all files
+- `GET /api/files/grouped` - Files grouped by session
+- `GET /api/files/:name` - Download file
+- `POST /api/upload` - Upload file (multipart)
+- `DELETE /api/files/:name` - Delete file
+- `GET /api/download-all` - Download all as ZIP
+
+### Rust Microservice API (Port 3030)
+
+Base URL: `http://<host>:3030`
+
+Chunked Transfer Endpoints:
+
+#### POST /transfer/init
+Initialize chunked transfer.
+
+```json
+{
+  "filename": "large-file.zip",
+  "total_size": 1073741824,
+  "chunk_size": 1048576
+}
 ```
 
-Endpoints:
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "transfer_id": "trans_1234567890",
+    "total_chunks": 1024
+  }
+}
+```
 
-- `GET /`: web UI
-- `GET /api/files`: list files
-- `GET /api/files/grouped`: list files grouped by upload session
-- `GET /api/files/:name`: download one file
-- `POST /api/upload`: upload one file (multipart form field: `file`)
-- `DELETE /api/files/:name`: delete one file
-- `GET /api/download-all`: download all files as zip
-- `GET /api/download-session/:timestamp`: download one upload session as zip
+#### POST /transfer/chunk
+Upload chunk (multipart form).
+
+Fields:
+- `transfer_id` - Transfer ID
+- `chunk_index` - Chunk number (0-based)
+- `chunk` - Binary data
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "chunk_hash": "a1b2c3...",
+    "received_count": 512,
+    "total_chunks": 1024
+  }
+}
+```
+
+#### POST /transfer/complete
+Finalize transfer.
+
+```json
+{
+  "transfer_id": "trans_1234567890"
+}
+```
+
+#### GET /transfer/:id/status
+Check progress.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "transfer_id": "trans_1234567890",
+    "status": "in_progress",
+    "progress": "50%"
+  }
+}
+```
+
+#### GET /health
+Health check.
 
 ## File Categorization
 
@@ -260,6 +421,8 @@ npm install -g neurolink
 
 ## Development
 
+### Node.js Components
+
 Build:
 
 ```bash
@@ -272,19 +435,60 @@ Watch mode:
 npm run dev
 ```
 
-Project layout:
+### Rust Components
+
+Build debug:
+
+```bash
+cd rust-service
+cargo build
+```
+
+Build release:
+
+```bash
+cd rust-service
+cargo build --release
+```
+
+Run tests:
+
+```bash
+cd rust-service
+cargo test
+```
+
+### Project Structure
 
 ```text
 neurolink/
-  src/
-    cli.ts
-    share.ts
-    server.ts
-    discovery.ts
-    sender.ts
-    network.ts
-  dist/
-  package.json
+├── src/                          # Node.js source
+│   ├── cli/
+│   │   ├── main.ts              # Interactive CLI
+│   │   ├── menu.ts              # Menu handlers
+│   │   └── share.ts             # neuroshare command
+│   ├── core/
+│   │   ├── discovery.ts         # mDNS device discovery
+│   │   └── sender.ts            # File transfer logic
+│   ├── server/
+│   │   └── main.ts              # Hono server & web UI
+│   ├── utils/
+│   │   └── network.ts           # Network utilities
+│   └── types/
+│       └── index.ts             # TypeScript types
+├── rust-service/                 # Rust microservice
+│   ├── src/
+│   │   ├── main.rs              # Server entry point
+│   │   ├── cli.rs               # neuroshare CLI
+│   │   ├── transfer/
+│   │   │   └── mod.rs           # Chunked transfer engine
+│   │   ├── api/
+│   │   │   └── routes.rs        # HTTP API routes
+│   │   └── hashing/
+│   │       └── mod.rs           # SHA-256 hashing
+│   └── Cargo.toml
+├── dist/                         # Compiled JavaScript
+└── package.json
 ```
 
 ## Security
