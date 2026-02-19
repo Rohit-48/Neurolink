@@ -1,7 +1,7 @@
 use axum::{
     extract::{Multipart, State},
     http::StatusCode,
-    response::Json,
+    response::{Html, Json},
     routing::{post, get},
     Router,
 };
@@ -46,12 +46,51 @@ pub struct StatusResponse {
 
 pub fn routes(transfer_manager: Arc<TransferManager>) -> Router {
     Router::new()
+        .route("/", get(root_page))
         .route("/transfer/init", post(init_transfer))
         .route("/transfer/chunk", post(receive_chunk))
         .route("/transfer/complete", post(complete_transfer))
         .route("/transfer/:id/status", get(get_status))
         .route("/health", get(health_check))
         .with_state(transfer_manager)
+}
+
+async fn root_page() -> Html<&'static str> {
+    Html(r#"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NeuroLink Server</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #0a0a0a; color: #fff; }
+        h1 { color: #00ff88; }
+        .status { background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .endpoint { background: #2a2a2a; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; }
+        code { background: #333; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>NeuroLink v2.0.0 Server</h1>
+    <div class="status">
+        <h2>Status: Running</h2>
+        <p>Rust-powered file transfer service</p>
+    </div>
+    
+    <h2>API Endpoints</h2>
+    <div class="endpoint">POST /transfer/init - Initialize upload</div>
+    <div class="endpoint">POST /transfer/chunk - Upload chunk</div>
+    <div class="endpoint">POST /transfer/complete - Finalize</div>
+    <div class="endpoint">GET /transfer/:id/status - Check progress</div>
+    <div class="endpoint">GET /health - Health check</div>
+    
+    <h2>Usage</h2>
+    <p>Send files using the CLI:</p>
+    <div class="endpoint"><code>neuroshare send file.zip --host localhost --port 3030</code></div>
+    
+    <p>For web UI, run: <code>neurolink --port 3000</code></p>
+</body>
+</html>
+"#)
 }
 
 async fn health_check() -> Json<ApiResponse<String>> {
