@@ -85,8 +85,8 @@ async fn root_page() -> Html<&'static str> {
     
     <h2>Usage</h2>
     <p>Send files using the CLI:</p>
-    <div class="endpoint"><code>neuroshare send file.zip --host localhost --port 8000</code></div>
-    <p>For phone access, open <code>http://&lt;your-lan-ip&gt;:8000</code> (not <code>0.0.0.0</code>).</p>
+    <div class="endpoint"><code>neuroshare send file.zip --host localhost --port 3000</code></div>
+    <p>For phone access, open <code>http://&lt;your-lan-ip&gt;:3000</code> (not <code>0.0.0.0</code>).</p>
     
     <p>For web UI, run: <code>neurolink --port 3000</code></p>
 </body>

@@ -16,7 +16,7 @@ High-performance local network file sharing with chunked transfers and device di
 
 ## Components
 
-- **`neurolinkd`** - High-performance Rust server (port 8000)
+- **`neurolinkd`** - High-performance Rust server (port 3000)
 - **`neuroshare`** - Rust CLI client with progress bars
 - **`neurolink`** - Node.js server with web UI (port 3000) - optional
 
@@ -43,7 +43,7 @@ NeuroLink v2 uses a hybrid architecture:
 ┌─────────────────┐     HTTP      ┌──────────────────┐
 │   Node.js API   │ ◄────────────► │  Rust Service    │
 │   (Express)     │   localhost    │  (Axum + Tokio)  │
-│   Port 3000     │                │  Port 8000       │
+│   Port 3000     │                │  Port 3000       │
 └─────────────────┘                └──────────────────┘
         │                                   │
         ▼                                   ▼
@@ -93,7 +93,7 @@ Features:
 ┌─────────────────────────────────────┐
 │        neurolinkd (Rust)            │
 ├─────────────────────────────────────┤
-│  Axum HTTP Server (Port 8000)       │
+│  Axum HTTP Server (Port 3000)       │
 ├─────────────────────────────────────┤
 │  Transfer Manager                   │
 │  ├─ HashMap<TransferId, Transfer>  │
@@ -211,7 +211,7 @@ Fastest performance, no Node.js required:
 neurolinkd
 
 # Terminal 2: Send files with progress bar
-neuroshare send ./large-file.zip --host localhost --port 8000
+neuroshare send ./large-file.zip --host localhost --port 3000
 ```
 
 That's it! The Rust server provides the complete file transfer API.
@@ -219,10 +219,10 @@ That's it! The Rust server provides the complete file transfer API.
 For mobile devices on the same Wi-Fi, open:
 
 ```text
-http://<your-computer-lan-ip>:8000
+http://<your-computer-lan-ip>:3000
 ```
 
-Do not use `http://0.0.0.0:8000` in a browser. `0.0.0.0` is only a server bind address.
+Do not use `http://0.0.0.0:3000` in a browser. `0.0.0.0` is only a server bind address.
 
 ### With Web UI (Optional)
 
@@ -230,7 +230,7 @@ For browser-based upload/download:
 
 ```bash
 # Terminal 1: Rust server (file transfers)
-neurolinkd --port 8000
+neurolinkd --port 3000
 
 # Terminal 2: Node.js server (web UI)
 neurolink --port 3000
@@ -241,7 +241,7 @@ neurolink --port 3000
 ### Configuration
 
 **Rust service (primary):**
-- Port: `8000` (default)
+- Port: `3000` (default)
 - Storage: `./shared` (created automatically)
 - Chunk size: 1MB (configurable via `--chunk-size`)
 
@@ -351,9 +351,9 @@ Base URL: `http://<host>:3000`
 - `DELETE /api/files/:name` - Delete file
 - `GET /api/download-all` - Download all as ZIP
 
-### Rust Microservice API (Port 8000)
+### Rust Microservice API (Port 3000)
 
-Base URL: `http://<host>:8000`
+Base URL: `http://<host>:3000`
 
 Chunked Transfer Endpoints:
 
