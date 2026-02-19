@@ -17,10 +17,35 @@ program
     .action(async (options) => {
     await interactiveMode(options);
 });
+function printElephantBanner() {
+    const art = [
+        "                          _.-- ,.--.",
+        "                        .'   .'    /",
+        "                        | @       |'..--------._",
+        "                       /      \\._/              '.",
+        "                      /  .-.-                     \\",
+        "                     (  /    \\                     \\",
+        "                      \\\\      '.                  | #",
+        "                       \\\\       \\   -.           /",
+        "                        :\\       |    )._____.'   \\",
+        "                         \"       |   /  \\  |  \\    )",
+        "                                 |   |./'  :__ \\.-'",
+        "                                 '--'"
+    ];
+    const palette = ['cyan', 'blueBright', 'magentaBright', 'yellowBright'];
+    console.log('');
+    art.forEach((line, idx) => {
+        const color = palette[idx % palette.length];
+        console.log(styleText(color, line));
+    });
+    console.log(styleText(['bold', 'greenBright'], '                 NEUROLINK - Painted Elephant Mode'));
+    console.log('');
+}
 async function interactiveMode(options) {
     const port = parseInt(options.port);
     const directory = resolve(options.directory);
     const deviceName = options.name;
+    printElephantBanner();
     // Start the server
     const { app } = await createServer(directory, port);
     const { serve } = await import('@hono/node-server');
@@ -28,30 +53,9 @@ async function interactiveMode(options) {
         fetch: app.fetch,
         port
     });
-    // Display ASCII logo - Flower with stem
+    console.log(styleText(['bold'], '                 N E U R O L I N K   v2.0.0'));
+    console.log(styleText('gray', '            Local Network File Sharing'));
     console.log('');
-    console.log('                     ////  |  |  \\\\\\\\                   ');
-    console.log('                    //    |  |     \\\\                   ');
-    console.log('                   //     |  |      \\\\                  ');
-    console.log('                  //      |  |       \\\\                 ');
-    console.log('                 //  |---|---|---|---| \\\\                ');
-    console.log('                 \\  | N | E | U | R |  //                ');
-    console.log('                  \\ |---|---|---|---| //                 ');
-    console.log('                   \\|   |   |   |  |//                  ');
-    console.log('                    \\\\  |   |   | //                    ');
-    console.log('                     \\\\  |   |  //                     ');
-    console.log('                      \\\\ _|_ |//                      ');
-    console.log('                       \\\\   |//                       ');
-    console.log('                        \\\\  |//                        ');
-    console.log('                         \\\\ |//                         ');
-    console.log('                          \\|//                          ');
-    console.log('                           |                             ');
-    console.log('                           |                             ');
-    console.log('                          / \\                           ');
-    console.log('                                                       ');
-    console.log('                 N E U R O L I N K   v2.0.0           ');
-    console.log('            Local Network File Sharing                 ');
-    console.log('                                                       ');
     console.log(styleText('gray', 'Directory: ') + styleText('cyan', directory));
     console.log(styleText('gray', 'Port: ') + styleText('cyan', port.toString()));
     console.log(styleText('gray', 'Device: ') + styleText('cyan', deviceName));

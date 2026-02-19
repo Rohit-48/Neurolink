@@ -20,6 +20,31 @@ fn detect_lan_ip() -> Option<IpAddr> {
     (!local_addr.ip().is_loopback()).then_some(local_addr.ip())
 }
 
+fn print_elephant_banner() {
+    let art = [
+        "                          _.-- ,.--.",
+        "                        .'   .'    /",
+        "                        | @       |'..--------._",
+        "                       /      \\._/              '.",
+        "                      /  .-.-                     \\",
+        "                     (  /    \\                     \\",
+        "                      \\\\      '.                  | #",
+        "                       \\\\       \\   -.           /",
+        "                        :\\       |    )._____.'   \\",
+        "                         \"       |   /  \\  |  \\    )",
+        "                                 |   |./'  :__ \\.-'",
+        "                                 '--'",
+    ];
+    let colors = [51, 45, 39, 33, 27, 63, 99, 135, 141, 147, 153, 159];
+
+    println!();
+    for (line, color) in art.iter().zip(colors.iter()) {
+        println!("\x1b[1;38;5;{}m{}\x1b[0m", color, line);
+    }
+    println!("\x1b[1;38;5;226m                 NEUROLINKD - Painted Elephant Mode\x1b[0m");
+    println!();
+}
+
 #[tokio::main]
 async fn main() {
     // Initialize logging with filter
@@ -30,6 +55,8 @@ async fn main() {
         .with(filter)
         .with(tracing_subscriber::fmt::layer().with_target(false))
         .init();
+
+    print_elephant_banner();
 
     info!("🚀 Starting NeuroLink Rust Microservice v2.0.0");
     info!("📡 Local network file sharing with chunked transfers");
