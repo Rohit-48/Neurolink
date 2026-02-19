@@ -31,7 +31,7 @@ async fn main() {
     let port = std::env::var("NEUROLINK_PORT")
         .ok()
         .and_then(|p| p.parse().ok())
-        .unwrap_or(3030u16);
+        .unwrap_or(8000u16);
 
     let storage_path = std::env::var("NEUROLINK_STORAGE")
         .unwrap_or_else(|_| "./shared".to_string());

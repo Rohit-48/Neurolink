@@ -30,7 +30,7 @@ enum Commands {
         host: String,
 
         /// Target port
-        #[arg(short, long, default_value = "3030")]
+        #[arg(short, long, default_value = "8000")]
         port: u16,
 
         /// Chunk size in KB
