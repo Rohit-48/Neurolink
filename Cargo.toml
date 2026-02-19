@@ -5,11 +5,11 @@ edition = "2021"
 
 [[bin]]
 name = "neurolinkd"
-path = "src/main.rs"
+path = "src/rust/main.rs"
 
 [[bin]]
 name = "neuroshare"
-path = "src/cli.rs"
+path = "src/rust/cli.rs"
 
 [dependencies]
 # Async runtime

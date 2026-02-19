@@ -53,27 +53,103 @@ NeuroLink v2 uses a hybrid architecture:
 └──────────────┘                    └──────────────┘
 ```
 
+## Why Rust?
+
+NeuroLink v2.0 is built with Rust for maximum performance and reliability:
+
+### Performance Benefits
+- **Zero-cost abstractions** - High-level code with C-level performance
+- **Memory safety** - No garbage collection pauses or memory leaks
+- **Async/await** - Built on Tokio for scalable concurrent I/O
+- **Static binaries** - Single executable, no runtime dependencies
+
+### Technical Stack
+- **Axum** - Modern, ergonomic web framework
+- **Tokio** - Rust's premier async runtime
+- **Tower** - Modular middleware system
+- **Tracing** - Structured, contextual logging
+
 ## Components
 
-### 1. Node.js Server (`neurolink`)
-- Interactive CLI menu
-- Web interface (HTML/CSS/JS)
-- mDNS device discovery
-- Session management
-- File metadata
+### 1. Rust Server (`neurolinkd`) - Primary
+**Location**: `src/rust/main.rs`
 
-### 2. Rust Microservice (`neurolinkd`)
-- Chunked file transfers
-- SHA-256 hash verification
-- Async I/O with Tokio
-- Progress tracking
-- Compression ready
+Core file transfer engine:
+```rust
+// Chunked transfer with SHA-256 verification
+let chunk_hash = sha256::compute(&chunk_data);
+transfer_manager.receive_chunk(id, index, chunk_data).await?;
+```
 
-### 3. CLI Client (`neuroshare`)
-- Send files from terminal
-- Progress bars
-- Host/port selection
-- Batch file upload
+Features:
+- **Chunked transfers** - Files split into 1MB chunks for parallel upload
+- **SHA-256 verification** - Every chunk hash-verified
+- **Concurrent processing** - Multiple chunks simultaneously
+- **Streaming I/O** - Memory-efficient file handling
+- **Graceful shutdown** - SIGTERM/SIGINT handling
+
+**Architecture**:
+```
+┌─────────────────────────────────────┐
+│        neurolinkd (Rust)            │
+├─────────────────────────────────────┤
+│  Axum HTTP Server (Port 3030)       │
+├─────────────────────────────────────┤
+│  Transfer Manager                   │
+│  ├─ HashMap<TransferId, Transfer>  │
+│  ├─ Chunk validation (SHA-256)     │
+│  └─ Async file I/O (Tokio)         │
+├─────────────────────────────────────┤
+│  Storage                            │
+│  └─ ./shared/ (configurable)       │
+└─────────────────────────────────────┘
+```
+
+### 2. Rust CLI (`neuroshare`)
+**Location**: `src/rust/cli.rs`
+
+Client for sending files:
+```rust
+// Automatic chunking and upload
+let chunks = file.split(CHUNK_SIZE);
+for (i, chunk) in chunks.enumerate() {
+    upload_chunk(transfer_id, i, chunk).await?;
+}
+```
+
+Features:
+- **Progress bars** - Real-time upload progress
+- **Batch uploads** - Multiple files at once
+- **Host/port config** - Flexible targeting
+- **Error recovery** - Automatic retry on failure
+
+### 3. Node.js Server (`neurolink`) - Optional
+**Location**: `dist/cli/main.js`
+
+Web UI and device discovery (optional add-on):
+- Web interface for browser users
+- mDNS service advertisement
+- Session metadata display
+
+## File Structure
+
+```
+neurolink/
+├── Cargo.toml              # Rust workspace
+├── Cargo.lock              # Dependency lock
+├── src/
+│   └── rust/
+│       ├── main.rs         # Server entry
+│       ├── cli.rs          # CLI client
+│       ├── api/
+│       │   └── routes.rs   # HTTP endpoints
+│       ├── transfer/
+│       │   └── mod.rs      # Transfer engine
+│       └── hashing/
+│           └── mod.rs      # SHA-256 utilities
+├── package.json            # Node.js (optional)
+└── shared/                 # File storage
+```
 
 ## Requirements
 
