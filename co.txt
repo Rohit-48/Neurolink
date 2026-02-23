@@ -1,1 +1,3 @@
 opencode -s ses_3a9acb9f8ffexOxHLWBGFNRDWh
+
+codex resume 019c7686-db15-7e03-8184-a8e0de7f31a2
