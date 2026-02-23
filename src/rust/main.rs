@@ -2,6 +2,7 @@ use std::net::{IpAddr, SocketAddr, UdpSocket};
 use std::sync::Arc;
 use axum::Router;
 use clap::Parser;
+use tempfile::TempDir;
 use tokio::signal;
 use tower_http::services::ServeDir;
 use tower_http::cors::CorsLayer;
@@ -22,8 +23,8 @@ struct Args {
     port: u16,
 
     /// Directory to store and serve shared files
-    #[arg(short, long, env = "NEUROLINK_STORAGE", default_value = "./shared")]
-    storage: String,
+    #[arg(short, long, env = "NEUROLINK_STORAGE")]
+    storage: Option<String>,
 }
 
 fn detect_lan_ip() -> Option<IpAddr> {
@@ -94,15 +95,25 @@ async fn main() {
     } else {
         args.port
     };
-    let storage_path = args.storage;
-
-    // Ensure storage directory exists
-    tokio::fs::create_dir_all(&storage_path)
-        .await
-        .expect("Failed to create storage directory");
+    let (storage_path, ephemeral_storage): (String, Option<TempDir>) = match args.storage {
+        Some(path) => {
+            tokio::fs::create_dir_all(&path)
+                .await
+                .expect("Failed to create storage directory");
+            (path, None)
+        }
+        None => {
+            let tmp = TempDir::new().expect("Failed to create temporary storage directory");
+            let tmp_path = tmp.path().to_string_lossy().to_string();
+            (tmp_path, Some(tmp))
+        }
+    };
 
     info!("Starting NeuroLink Rust Service v2.0.0");
     info!("Storage path: {}", storage_path);
+    if ephemeral_storage.is_some() {
+        info!("Storage mode: ephemeral (clears automatically when server stops)");
+    }
     info!("Listening on port: {}", port);
 
     // Initialize transfer manager
@@ -133,6 +144,7 @@ async fn main() {
         .await
         .unwrap();
 
+    drop(ephemeral_storage);
     info!("Server shutdown complete");
 }
 

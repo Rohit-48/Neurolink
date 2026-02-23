@@ -7,7 +7,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::transfer::{SharedFile, TransferManager};
+use crate::transfer::{SharedFile, TransferManager, UploadBatch};
 use tracing::{info, error};
 
 #[derive(Serialize)]
@@ -22,6 +22,7 @@ pub struct InitTransferRequest {
     pub filename: String,
     pub total_size: u64,
     pub chunk_size: usize,
+    pub batch_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -48,6 +49,7 @@ pub fn routes(transfer_manager: Arc<TransferManager>) -> Router {
     Router::new()
         .route("/", get(root_page))
         .route("/files", get(list_files))
+        .route("/uploads", get(list_uploads))
         .route("/transfer/init", post(init_transfer))
         .route("/transfer/chunk", post(receive_chunk))
         .route("/transfer/complete", post(complete_transfer))
@@ -276,20 +278,21 @@ async fn root_page() -> Html<&'static str> {
                 <h3>Upload</h3>
                 <label for="fileInput">Choose file</label>
                 <div id="dropzone" class="dropzone">
-                    <input id="fileInput" type="file" />
-                    <div class="muted">Drop file here or click to browse.</div>
+                    <input id="fileInput" type="file" multiple />
+                    <div class="muted">Drop files here or click to browse.</div>
                 </div>
                 <div class="actions">
-                    <button id="uploadBtn">Upload</button>
+                    <button id="uploadBtn">Upload Batch</button>
                     <button id="refreshBtn" class="ghost" type="button">Refresh</button>
                 </div>
                 <div class="progress"><div id="bar" class="bar"></div></div>
                 <div id="status"></div>
+                <p id="selection" class="muted"></p>
             </section>
 
             <section class="card">
-                <h3>Shared Files</h3>
-                <p class="muted">Click any file to download from <code>/shared</code>.</p>
+                <h3>Upload Batches</h3>
+                <p class="muted">Each upload click creates one time-based batch.</p>
                 <ul id="files" class="files"></ul>
             </section>
         </div>
@@ -303,16 +306,32 @@ async fn root_page() -> Html<&'static str> {
         const refreshBtn = document.getElementById('refreshBtn');
         const bar = document.getElementById('bar');
         const statusEl = document.getElementById('status');
+        const selectionEl = document.getElementById('selection');
         const filesEl = document.getElementById('files');
-        let selectedFile = null;
+        let selectedFiles = [];
 
         function setStatus(text, kind) {
             statusEl.textContent = text;
             statusEl.className = kind ? kind : '';
         }
 
+        function formatBytes(size) {
+            if (size < 1024) return `${size} B`;
+            if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+            return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        function updateSelection() {
+            if (selectedFiles.length === 0) {
+                selectionEl.textContent = 'No files selected';
+                return;
+            }
+            const total = selectedFiles.reduce((n, f) => n + f.size, 0);
+            selectionEl.textContent = `${selectedFiles.length} file(s) selected · ${formatBytes(total)}`;
+        }
+
         async function refreshFiles() {
-            const res = await fetch('/files');
+            const res = await fetch('/uploads');
             const json = await res.json();
             if (!res.ok || !json.success || !Array.isArray(json.data)) {
                 filesEl.innerHTML = '<li class="muted">Failed to load files.</li>';
@@ -324,29 +343,32 @@ async fn root_page() -> Html<&'static str> {
                 return;
             }
 
-            filesEl.innerHTML = json.data
-                .map(file => {
-                    const kb = file.size < 1024 ? `${file.size} B` : `${(file.size / 1024).toFixed(1)} KB`;
-                    const ts = file.modified_at === 'unknown'
-                        ? 'unknown'
-                        : new Date(file.modified_at).toLocaleString();
-                    return `<li><a href="/shared/${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer">
+            filesEl.innerHTML = json.data.map(batch => {
+                const when = new Date(batch.uploaded_at).toLocaleString();
+                const items = batch.files.map(file => `
+                    <a href="/shared/${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer">
                         <span>${file.name}</span>
-                        <span class="file-meta">${kb} · ${ts}</span>
-                    </a></li>`;
+                        <span class="file-meta">${formatBytes(file.size)}</span>
+                    </a>
+                `).join('');
+                return `<li>
+                    <div class="file-meta" style="padding:8px 2px;">${when} · ${batch.files.length} file(s)</div>
+                    ${items}
+                </li>`;
                 })
                 .join('');
         }
 
-        async function uploadFile(file) {
-            setStatus('Initializing transfer...', '');
+        async function uploadSingleFile(file, batchId, doneBytes, totalBytes) {
+            setStatus(`Initializing ${file.name}...`, '');
             const initRes = await fetch('/transfer/init', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     filename: file.name,
                     total_size: file.size,
-                    chunk_size: CHUNK_SIZE
+                    chunk_size: CHUNK_SIZE,
+                    batch_id: batchId
                 })
             });
             const initJson = await initRes.json();
@@ -374,8 +396,10 @@ async fn root_page() -> Html<&'static str> {
                 }
 
                 const pct = Math.floor(((idx + 1) / totalChunks) * 100);
-                bar.style.width = `${pct}%`;
-                setStatus(`Uploading... ${pct}%`, '');
+                const uploaded = doneBytes + Math.min(file.size, (idx + 1) * CHUNK_SIZE);
+                const overallPct = Math.floor((uploaded / totalBytes) * 100);
+                bar.style.width = `${overallPct}%`;
+                setStatus(`Uploading ${file.name}... ${pct}%`, '');
             }
 
             const doneRes = await fetch('/transfer/complete', {
@@ -388,15 +412,26 @@ async fn root_page() -> Html<&'static str> {
                 throw new Error(doneJson.error || 'Failed to complete transfer');
             }
 
-            const link = `/shared/${encodeURIComponent(file.name)}`;
-            setStatus(`Upload complete. File available at ${link}`, 'ok');
+        }
+
+        async function uploadBatch(files) {
+            const batchId = `batch_${Date.now()}`;
+            const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+            let doneBytes = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                setStatus(`Uploading ${i + 1}/${files.length}: ${file.name}`, '');
+                await uploadSingleFile(file, batchId, doneBytes, totalBytes);
+                doneBytes += file.size;
+            }
+            setStatus(`Batch upload complete (${files.length} file(s))`, 'ok');
             await refreshFiles();
         }
 
         uploadBtn.addEventListener('click', async () => {
-            const file = selectedFile || (fileInput.files && fileInput.files[0]);
-            if (!file) {
-                setStatus('Select a file first.', 'err');
+            if (selectedFiles.length === 0) {
+                setStatus('Select files first.', 'err');
                 return;
             }
 
@@ -404,7 +439,7 @@ async fn root_page() -> Html<&'static str> {
             bar.style.width = '0%';
             setStatus('', '');
             try {
-                await uploadFile(file);
+                await uploadBatch(selectedFiles);
             } catch (err) {
                 setStatus(err.message || 'Upload failed', 'err');
             } finally {
@@ -415,8 +450,8 @@ async fn root_page() -> Html<&'static str> {
         refreshBtn.addEventListener('click', refreshFiles);
 
         fileInput.addEventListener('change', () => {
-            selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-            if (selectedFile) setStatus(`${selectedFile.name} selected`, '');
+            selectedFiles = fileInput.files ? Array.from(fileInput.files) : [];
+            updateSelection();
         });
 
         dropzone.addEventListener('dragover', (e) => {
@@ -428,11 +463,12 @@ async fn root_page() -> Html<&'static str> {
             e.preventDefault();
             dropzone.classList.remove('active');
             if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                selectedFile = e.dataTransfer.files[0];
-                setStatus(`${selectedFile.name} selected`, '');
+                selectedFiles = Array.from(e.dataTransfer.files);
+                updateSelection();
             }
         });
 
+        updateSelection();
         refreshFiles();
     </script>
 </body>
@@ -471,6 +507,20 @@ async fn list_files(
     }
 }
 
+async fn list_uploads(
+    State(manager): State<Arc<TransferManager>>,
+) -> impl IntoResponse {
+    let uploads = manager.list_upload_batches().await;
+    (
+        StatusCode::OK,
+        Json(ApiResponse::<Vec<UploadBatch>> {
+            success: true,
+            data: Some(uploads),
+            error: None,
+        }),
+    )
+}
+
 async fn init_transfer(
     State(manager): State<Arc<TransferManager>>,
     Json(req): Json<InitTransferRequest>,
@@ -489,7 +539,10 @@ async fn init_transfer(
         );
     }
 
-    match manager.init_transfer(req.filename, req.total_size, req.chunk_size).await {
+    match manager
+        .init_transfer(req.filename, req.total_size, req.chunk_size, req.batch_id)
+        .await
+    {
         Ok(transfer_id) => {
             let total_chunks = ((req.total_size + req.chunk_size as u64 - 1) / req.chunk_size as u64) as usize;
             (
@@ -653,6 +706,7 @@ mod tests {
             filename: "test.txt".to_string(),
             total_size: 1024,
             chunk_size: 0,
+            batch_id: None,
         };
 
         let response = init_transfer(State(manager), Json(req)).await.into_response();

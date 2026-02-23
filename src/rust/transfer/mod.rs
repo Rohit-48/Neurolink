@@ -34,6 +34,7 @@ pub struct TransferMetadata {
     pub total_size: u64,
     pub chunk_size: usize,
     pub total_chunks: usize,
+    pub batch_id: Option<String>,
     pub created_at: String,
     pub status: TransferStatus,
 }
@@ -63,6 +64,7 @@ pub struct ChunkInfo {
 #[derive(Debug, Clone)]
 pub struct TransferManager {
     transfers: Arc<Mutex<HashMap<String, Transfer>>>,
+    completed_uploads: Arc<Mutex<Vec<CompletedUpload>>>,
     storage_path: PathBuf,
 }
 
@@ -73,10 +75,33 @@ pub struct SharedFile {
     pub modified_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UploadedFile {
+    pub name: String,
+    pub size: u64,
+    pub uploaded_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UploadBatch {
+    pub batch_id: String,
+    pub uploaded_at: String,
+    pub files: Vec<UploadedFile>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CompletedUpload {
+    pub batch_id: String,
+    pub name: String,
+    pub size: u64,
+    pub uploaded_at: String,
+}
+
 impl TransferManager {
     pub fn new(storage_path: impl AsRef<Path>) -> Self {
         Self {
             transfers: Arc::new(Mutex::new(HashMap::new())),
+            completed_uploads: Arc::new(Mutex::new(Vec::new())),
             storage_path: storage_path.as_ref().to_path_buf(),
         }
     }
@@ -86,6 +111,7 @@ impl TransferManager {
         filename: String,
         total_size: u64,
         chunk_size: usize,
+        batch_id: Option<String>,
     ) -> Result<String> {
         // Validate chunk_size to prevent division by zero
         if chunk_size == 0 {
@@ -106,6 +132,7 @@ impl TransferManager {
             total_size,
             chunk_size,
             total_chunks,
+            batch_id,
             created_at: Utc::now().to_rfc3339(),
             status: TransferStatus::Pending,
         };
@@ -214,6 +241,18 @@ impl TransferManager {
         info!("Transfer {} completed. File: {} (hash: {})", 
               transfer_id, transfer.metadata.filename, &final_hash[..16]);
 
+        let mut completed_uploads = self.completed_uploads.lock().await;
+        completed_uploads.push(CompletedUpload {
+            batch_id: transfer
+                .metadata
+                .batch_id
+                .clone()
+                .unwrap_or_else(|| format!("single_{}", transfer.metadata.id)),
+            name: transfer.metadata.filename.clone(),
+            size: transfer.metadata.total_size,
+            uploaded_at: Utc::now().to_rfc3339(),
+        });
+
         let metadata = transfer.metadata.clone();
         
         // Remove from active transfers
@@ -262,6 +301,46 @@ impl TransferManager {
 
         out.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
         Ok(out)
+    }
+
+    pub async fn list_upload_batches(&self) -> Vec<UploadBatch> {
+        let completed_uploads = self.completed_uploads.lock().await;
+        let mut grouped: HashMap<String, Vec<CompletedUpload>> = HashMap::new();
+
+        for item in completed_uploads.iter() {
+            grouped
+                .entry(item.batch_id.clone())
+                .or_default()
+                .push(item.clone());
+        }
+
+        let mut batches: Vec<UploadBatch> = grouped
+            .into_iter()
+            .map(|(batch_id, mut files)| {
+                files.sort_by(|a, b| a.uploaded_at.cmp(&b.uploaded_at));
+                let uploaded_at = files
+                    .last()
+                    .map(|f| f.uploaded_at.clone())
+                    .unwrap_or_else(|| Utc::now().to_rfc3339());
+                let files = files
+                    .into_iter()
+                    .map(|f| UploadedFile {
+                        name: f.name,
+                        size: f.size,
+                        uploaded_at: f.uploaded_at,
+                    })
+                    .collect();
+
+                UploadBatch {
+                    batch_id,
+                    uploaded_at,
+                    files,
+                }
+            })
+            .collect();
+
+        batches.sort_by(|a, b| b.uploaded_at.cmp(&a.uploaded_at));
+        batches
     }
 }
 
