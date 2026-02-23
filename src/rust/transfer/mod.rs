@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs;
 use tokio::fs::ReadDir;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt, SeekFrom};
 use tokio::sync::Mutex;
 use sha2::{Sha256, Digest};
 use tracing::{info, debug};
@@ -341,6 +341,50 @@ impl TransferManager {
 
         batches.sort_by(|a, b| b.uploaded_at.cmp(&a.uploaded_at));
         batches
+    }
+
+    pub async fn files_for_batch(&self, batch_id: &str) -> Vec<UploadedFile> {
+        let completed_uploads = self.completed_uploads.lock().await;
+        let mut files: Vec<UploadedFile> = completed_uploads
+            .iter()
+            .filter(|item| item.batch_id == batch_id)
+            .map(|item| UploadedFile {
+                name: item.name.clone(),
+                size: item.size,
+                uploaded_at: item.uploaded_at.clone(),
+            })
+            .collect();
+        files.sort_by(|a, b| a.uploaded_at.cmp(&b.uploaded_at));
+        files
+    }
+
+    pub async fn read_file_chunk(
+        &self,
+        filename: &str,
+        chunk_index: usize,
+        chunk_size: usize,
+    ) -> Result<Vec<u8>> {
+        if chunk_size == 0 {
+            return Err(anyhow::anyhow!("chunk size must be greater than 0"));
+        }
+
+        let path = self.storage_path.join(filename);
+        let mut file = fs::File::open(path).await?;
+        let meta = file.metadata().await?;
+        let file_len = meta.len();
+
+        let start = chunk_index as u64 * chunk_size as u64;
+        if start >= file_len {
+            return Err(anyhow::anyhow!("chunk index out of range"));
+        }
+
+        let remaining = (file_len - start) as usize;
+        let read_len = remaining.min(chunk_size);
+        let mut buffer = vec![0u8; read_len];
+
+        file.seek(SeekFrom::Start(start)).await?;
+        file.read_exact(&mut buffer).await?;
+        Ok(buffer)
     }
 }
 
