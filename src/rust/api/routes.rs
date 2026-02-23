@@ -7,7 +7,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::transfer::TransferManager;
+use crate::transfer::{SharedFile, TransferManager};
 use tracing::{info, error};
 
 #[derive(Serialize)]
@@ -63,7 +63,7 @@ async fn root_page() -> Html<&'static str> {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NeuroLink Server</title>
+    <title>NeuroLink</title>
     <style>
         :root {
             --bg-0: #06070f;
@@ -177,6 +177,25 @@ async fn root_page() -> Html<&'static str> {
             filter: brightness(1.03);
         }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .actions { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+        .ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid #2f3a5d;
+            box-shadow: none;
+        }
+        .dropzone {
+            border: 1px dashed #33456f;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(11,17,35,.55);
+            transition: border-color .15s ease, background .15s ease;
+        }
+        .dropzone.active {
+            border-color: var(--accent);
+            background: rgba(24,240,255,.08);
+        }
         .muted { color: var(--muted); }
         .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
         .pill {
@@ -206,17 +225,21 @@ async fn root_page() -> Html<&'static str> {
         #status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; line-height: 1.45; }
         #status.ok { color: var(--ok); }
         #status.err { color: var(--err); }
-        .files { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow: auto; }
+        .files { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow: auto; }
         .files li { margin: 0; border-bottom: 1px solid #202c4a; }
         .files li:last-child { border-bottom: 0; }
         .files a {
             color: #7ff7ff;
             text-decoration: none;
-            display: block;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
             padding: 10px 2px;
             transition: color .15s ease, padding-left .15s ease;
         }
         .files a:hover { color: var(--accent); padding-left: 8px; }
+        .file-meta { color: var(--muted); font-size: 12px; }
         code {
             background: rgba(16,26,48,.85);
             border: 1px solid #2a3a63;
@@ -252,15 +275,21 @@ async fn root_page() -> Html<&'static str> {
             <section class="card">
                 <h3>Upload</h3>
                 <label for="fileInput">Choose file</label>
-                <input id="fileInput" type="file" />
-                <button id="uploadBtn">Upload</button>
+                <div id="dropzone" class="dropzone">
+                    <input id="fileInput" type="file" />
+                    <div class="muted">Drop file here or click to browse.</div>
+                </div>
+                <div class="actions">
+                    <button id="uploadBtn">Upload</button>
+                    <button id="refreshBtn" class="ghost" type="button">Refresh</button>
+                </div>
                 <div class="progress"><div id="bar" class="bar"></div></div>
                 <div id="status"></div>
             </section>
 
             <section class="card">
                 <h3>Shared Files</h3>
-                <p class="muted">Fetched from <code>/files</code>. Click any item to download.</p>
+                <p class="muted">Click any file to download from <code>/shared</code>.</p>
                 <ul id="files" class="files"></ul>
             </section>
         </div>
@@ -269,10 +298,13 @@ async fn root_page() -> Html<&'static str> {
     <script>
         const CHUNK_SIZE = 1024 * 1024;
         const fileInput = document.getElementById('fileInput');
+        const dropzone = document.getElementById('dropzone');
         const uploadBtn = document.getElementById('uploadBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
         const bar = document.getElementById('bar');
         const statusEl = document.getElementById('status');
         const filesEl = document.getElementById('files');
+        let selectedFile = null;
 
         function setStatus(text, kind) {
             statusEl.textContent = text;
@@ -282,7 +314,10 @@ async fn root_page() -> Html<&'static str> {
         async function refreshFiles() {
             const res = await fetch('/files');
             const json = await res.json();
-            if (!res.ok || !json.success || !Array.isArray(json.data)) return;
+            if (!res.ok || !json.success || !Array.isArray(json.data)) {
+                filesEl.innerHTML = '<li class="muted">Failed to load files.</li>';
+                return;
+            }
 
             if (json.data.length === 0) {
                 filesEl.innerHTML = '<li class="muted">No files yet.</li>';
@@ -290,7 +325,16 @@ async fn root_page() -> Html<&'static str> {
             }
 
             filesEl.innerHTML = json.data
-                .map(name => `<li><a href="/shared/${encodeURIComponent(name)}" target="_blank" rel="noreferrer">${name}</a></li>`)
+                .map(file => {
+                    const kb = file.size < 1024 ? `${file.size} B` : `${(file.size / 1024).toFixed(1)} KB`;
+                    const ts = file.modified_at === 'unknown'
+                        ? 'unknown'
+                        : new Date(file.modified_at).toLocaleString();
+                    return `<li><a href="/shared/${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer">
+                        <span>${file.name}</span>
+                        <span class="file-meta">${kb} · ${ts}</span>
+                    </a></li>`;
+                })
                 .join('');
         }
 
@@ -350,7 +394,7 @@ async fn root_page() -> Html<&'static str> {
         }
 
         uploadBtn.addEventListener('click', async () => {
-            const file = fileInput.files && fileInput.files[0];
+            const file = selectedFile || (fileInput.files && fileInput.files[0]);
             if (!file) {
                 setStatus('Select a file first.', 'err');
                 return;
@@ -365,6 +409,27 @@ async fn root_page() -> Html<&'static str> {
                 setStatus(err.message || 'Upload failed', 'err');
             } finally {
                 uploadBtn.disabled = false;
+            }
+        });
+
+        refreshBtn.addEventListener('click', refreshFiles);
+
+        fileInput.addEventListener('change', () => {
+            selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+            if (selectedFile) setStatus(`${selectedFile.name} selected`, '');
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('active');
+        });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('active'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('active');
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                selectedFile = e.dataTransfer.files[0];
+                setStatus(`${selectedFile.name} selected`, '');
             }
         });
 
@@ -397,7 +462,7 @@ async fn list_files(
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse::<Vec<String>> {
+            Json(ApiResponse::<Vec<SharedFile>> {
                 success: false,
                 data: None,
                 error: Some(e.to_string()),

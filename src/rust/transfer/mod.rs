@@ -66,6 +66,13 @@ pub struct TransferManager {
     storage_path: PathBuf,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SharedFile {
+    pub name: String,
+    pub size: u64,
+    pub modified_at: String,
+}
+
 impl TransferManager {
     pub fn new(storage_path: impl AsRef<Path>) -> Self {
         Self {
@@ -229,20 +236,31 @@ impl TransferManager {
         Ok(())
     }
 
-    pub async fn list_files(&self) -> Result<Vec<String>> {
+    pub async fn list_files(&self) -> Result<Vec<SharedFile>> {
         let mut out = Vec::new();
         let mut entries: ReadDir = fs::read_dir(&self.storage_path).await?;
 
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             if path.is_file() {
+                let meta = entry.metadata().await?;
                 if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                    out.push(name.to_string());
+                    let modified_at = meta
+                        .modified()
+                        .ok()
+                        .map(|t| chrono::DateTime::<chrono::Utc>::from(t).to_rfc3339())
+                        .unwrap_or_else(|| "unknown".to_string());
+
+                    out.push(SharedFile {
+                        name: name.to_string(),
+                        size: meta.len(),
+                        modified_at,
+                    });
                 }
             }
         }
 
-        out.sort();
+        out.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
         Ok(out)
     }
 }
