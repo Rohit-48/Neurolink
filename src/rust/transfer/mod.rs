@@ -386,6 +386,16 @@ impl TransferManager {
         file.read_exact(&mut buffer).await?;
         Ok(buffer)
     }
+
+    pub async fn read_file(&self, filename: &str) -> Result<Vec<u8>> {
+        let path = self.storage_path.join(filename);
+        let data = fs::read(path).await?;
+        Ok(data)
+    }
+
+    pub fn storage_path(&self) -> PathBuf {
+        self.storage_path.clone()
+    }
 }
 
 #[cfg(test)]

@@ -1,13 +1,15 @@
 use axum::{
+    body::Body,
     extract::{Multipart, Path, Query, State},
-    http::{header, StatusCode},
-    response::{Html, IntoResponse, Json},
+    http::{header, HeaderValue, StatusCode},
+    response::{Html, IntoResponse, Json, Response},
     routing::{post, get},
     Router,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use crate::transfer::{SharedFile, TransferManager, UploadBatch};
+use tokio::process::Command;
 use tracing::{info, error};
 
 #[derive(Serialize)]
@@ -56,6 +58,7 @@ pub fn routes(transfer_manager: Arc<TransferManager>) -> Router {
         .route("/", get(root_page))
         .route("/files", get(list_files))
         .route("/uploads", get(list_uploads))
+        .route("/download/batch/:batch_id", get(download_batch))
         .route("/download/chunk/:filename", get(download_chunk))
         .route("/transfer/init", post(init_transfer))
         .route("/transfer/chunk", post(receive_chunk))
@@ -353,32 +356,34 @@ async fn root_page() -> Html<&'static str> {
             filesEl.innerHTML = json.data.map(batch => {
                 const when = new Date(batch.uploaded_at).toLocaleString();
                 const items = batch.files.map(file => `
-                    <a href="/shared/${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer">
-                        <span>${file.name}</span>
-                        <span class="file-meta">${formatBytes(file.size)} ·
-                            <button type="button" class="ghost" style="padding:4px 8px;font-size:11px;"
-                                onclick="downloadChunk('${encodeURIComponent(file.name)}')">Chunk</button>
-                        </span>
-                    </a>
+                    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 2px;border-bottom:1px solid #202c4a;">
+                        <a href="/shared/${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer" style="padding:0;">
+                            ${file.name}
+                        </a>
+                        <div class="file-meta" style="display:flex;gap:6px;align-items:center;">
+                            ${formatBytes(file.size)}
+                            <button type="button" class="ghost chunk-btn" style="padding:4px 8px;font-size:11px;"
+                                data-file-name="${encodeURIComponent(file.name)}">Chunk</button>
+                        </div>
+                    </div>
                 `).join('');
                 return `<li>
                     <div class="file-meta" style="padding:8px 2px; display:flex; justify-content:space-between; gap:8px; align-items:center;">
                         <span>${when} · ${batch.files.length} file(s)</span>
-                        <button type="button" class="ghost" style="padding:4px 8px;font-size:11px;"
-                            onclick='downloadBatch(${JSON.stringify(batch.files)})'>Download Batch</button>
+                        <a class="ghost" style="padding:4px 8px;font-size:11px;text-decoration:none;color:inherit;"
+                            href="/download/batch/${encodeURIComponent(batch.batch_id)}">Download Batch</a>
                     </div>
                     ${items}
                 </li>`;
                 })
                 .join('');
-        }
 
-        function downloadBatch(files) {
-            if (!Array.isArray(files) || files.length === 0) return;
-            files.forEach((file, i) => {
-                setTimeout(() => {
-                    window.open(`/shared/${encodeURIComponent(file.name)}`, '_blank');
-                }, i * 180);
+            filesEl.querySelectorAll('.chunk-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const encoded = btn.dataset.fileName;
+                    if (encoded) downloadChunk(encoded);
+                });
             });
         }
 
@@ -558,35 +563,78 @@ async fn list_uploads(
     )
 }
 
+async fn download_batch(
+    State(manager): State<Arc<TransferManager>>,
+    Path(batch_id): Path<String>,
+) -> Response {
+    let files = manager.files_for_batch(&batch_id).await;
+    if files.is_empty() {
+        return (StatusCode::NOT_FOUND, "Batch not found").into_response();
+    }
+
+    let storage_path = manager.storage_path();
+    let mut cmd = Command::new("tar");
+    cmd.arg("-czf").arg("-").arg("-C").arg(storage_path);
+    for file in &files {
+        cmd.arg(&file.name);
+    }
+
+    let output = match cmd.output().await {
+        Ok(output) if output.status.success() => output.stdout,
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to build archive: {}", stderr),
+            )
+                .into_response();
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to run tar: {}", e),
+            )
+                .into_response();
+        }
+    };
+
+    let mut response = Response::new(Body::from(output));
+    *response.status_mut() = StatusCode::OK;
+    response
+        .headers_mut()
+        .insert(header::CONTENT_TYPE, HeaderValue::from_static("application/gzip"));
+
+    let disposition = format!("attachment; filename=\"upload-{}.tar.gz\"", batch_id);
+    if let Ok(v) = HeaderValue::from_str(&disposition) {
+        response.headers_mut().insert(header::CONTENT_DISPOSITION, v);
+    }
+    response
+}
+
 async fn download_chunk(
     State(manager): State<Arc<TransferManager>>,
     Path(filename): Path<String>,
     Query(query): Query<ChunkDownloadQuery>,
-) -> impl IntoResponse {
+) -> Response {
     match manager
         .read_file_chunk(&filename, query.index, query.chunk_size)
         .await
     {
         Ok(bytes) => {
+            let mut response = Response::new(Body::from(bytes));
+            *response.status_mut() = StatusCode::OK;
+            response.headers_mut().insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("application/octet-stream"),
+            );
             let out_name = format!("{}.part{}", filename, query.index);
-            (
-                StatusCode::OK,
-                [
-                    (header::CONTENT_TYPE, "application/octet-stream"),
-                    (
-                        header::CONTENT_DISPOSITION,
-                        &format!("attachment; filename=\"{}\"", out_name),
-                    ),
-                ],
-                bytes,
-            )
-                .into_response()
+            let disposition = format!("attachment; filename=\"{}\"", out_name);
+            if let Ok(v) = HeaderValue::from_str(&disposition) {
+                response.headers_mut().insert(header::CONTENT_DISPOSITION, v);
+            }
+            response
         }
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            format!("Chunk download failed: {}", e),
-        )
-            .into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, format!("Chunk download failed: {}", e)).into_response(),
     }
 }
 
