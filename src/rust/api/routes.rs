@@ -66,116 +66,204 @@ async fn root_page() -> Html<&'static str> {
     <title>NeuroLink Server</title>
     <style>
         :root {
-            --bg: #0b1220;
-            --panel: #111a2b;
-            --accent: #22d3ee;
-            --accent-2: #f59e0b;
-            --text: #e5eef8;
-            --muted: #96a4b8;
-            --ok: #10b981;
-            --err: #ef4444;
+            --bg-0: #06070f;
+            --bg-1: #0b0f1e;
+            --panel: #0f1426;
+            --panel-soft: #111a2f;
+            --line: #27304b;
+            --text: #e8eeff;
+            --muted: #8fa0c7;
+            --accent: #18f0ff;
+            --accent-2: #ffb020;
+            --ok: #2ee8a3;
+            --err: #ff5d7c;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             color: var(--text);
-            font-family: "JetBrains Mono", "Fira Code", monospace;
+            font-family: "Sora", "JetBrains Mono", "Fira Code", sans-serif;
             background:
-                radial-gradient(circle at 20% 20%, #1b2845 0%, transparent 35%),
-                radial-gradient(circle at 80% 10%, #15313e 0%, transparent 30%),
-                linear-gradient(140deg, #060b16, var(--bg));
+                radial-gradient(1200px 700px at 10% -10%, rgba(24,240,255,.15), transparent 50%),
+                radial-gradient(900px 500px at 100% 0%, rgba(255,176,32,.12), transparent 45%),
+                linear-gradient(140deg, var(--bg-0), var(--bg-1));
             min-height: 100vh;
-            padding: 24px;
+            padding: 28px 18px;
+            letter-spacing: .01em;
         }
-        .wrap { max-width: 920px; margin: 0 auto; }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: .15;
+            background-image:
+                linear-gradient(to right, rgba(143,160,199,.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(143,160,199,.15) 1px, transparent 1px);
+            background-size: 24px 24px;
+            mask-image: radial-gradient(circle at 50% 20%, black, transparent 75%);
+        }
+        .wrap { max-width: 980px; margin: 0 auto; position: relative; z-index: 1; }
         .hero {
-            background: linear-gradient(135deg, rgba(34,211,238,.15), rgba(245,158,11,.09));
-            border: 1px solid rgba(34,211,238,.4);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 18px;
+            background: linear-gradient(145deg, rgba(15,20,38,.94), rgba(10,14,26,.9));
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 20px 22px;
+            margin-bottom: 16px;
+            box-shadow: 0 20px 50px rgba(2,7,20,.45);
+            animation: rise .45s ease-out;
         }
-        h1 { margin: 0 0 8px 0; font-size: 28px; letter-spacing: .3px; }
-        .sub { color: var(--muted); margin: 0; }
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: clamp(24px, 4vw, 32px);
+            font-weight: 700;
+            letter-spacing: .02em;
+            text-shadow: 0 0 26px rgba(24,240,255,.22);
+        }
+        .sub { color: var(--muted); margin: 0; line-height: 1.5; }
+        .layout {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 14px;
+        }
         .card {
-            background: var(--panel);
-            border: 1px solid #1f3048;
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 14px;
+            background: linear-gradient(155deg, var(--panel-soft), var(--panel));
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 16px 16px 14px;
+            box-shadow: 0 12px 30px rgba(2,7,20,.35);
+            animation: rise .55s ease-out;
         }
-        label { display: block; margin-bottom: 8px; color: var(--muted); }
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #c8d4f6;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--muted);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
         input[type="file"] {
             width: 100%;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             color: var(--text);
+            background: #0a0f20;
+            border: 1px dashed #314168;
+            border-radius: 10px;
+            padding: 10px;
         }
         button {
-            background: linear-gradient(135deg, var(--accent), #0ea5e9);
-            color: #04121a;
+            background: linear-gradient(95deg, var(--accent), #57f6ff);
+            color: #001319;
             border: 0;
             border-radius: 10px;
-            padding: 10px 14px;
-            font-weight: 700;
+            padding: 10px 15px;
+            font-weight: 800;
+            letter-spacing: .04em;
+            text-transform: uppercase;
             cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+            box-shadow: 0 0 0 rgba(24,240,255,0);
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 24px rgba(24,240,255,.3);
+            filter: brightness(1.03);
         }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         .muted { color: var(--muted); }
-        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
         .pill {
-            border: 1px solid #284363;
+            border: 1px solid #33456f;
             border-radius: 999px;
-            padding: 6px 10px;
+            padding: 6px 11px;
             color: var(--muted);
-            font-size: 13px;
+            font-size: 12px;
+            background: rgba(18,26,48,.55);
         }
         .progress {
             width: 100%;
-            height: 10px;
+            height: 9px;
             border-radius: 999px;
-            background: #1b2940;
+            background: #121a30;
             overflow: hidden;
             margin-top: 10px;
+            border: 1px solid #243458;
         }
         .bar {
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg, var(--accent), var(--accent-2));
-            transition: width .15s linear;
+            transition: width .14s linear;
+            box-shadow: 0 0 20px rgba(24,240,255,.45);
         }
-        #status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; }
+        #status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; line-height: 1.45; }
         #status.ok { color: var(--ok); }
         #status.err { color: var(--err); }
-        .files a { color: var(--accent); text-decoration: none; }
-        .files li { margin: 6px 0; }
-        code { background: #122136; border-radius: 6px; padding: 2px 6px; }
+        .files { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow: auto; }
+        .files li { margin: 0; border-bottom: 1px solid #202c4a; }
+        .files li:last-child { border-bottom: 0; }
+        .files a {
+            color: #7ff7ff;
+            text-decoration: none;
+            display: block;
+            padding: 10px 2px;
+            transition: color .15s ease, padding-left .15s ease;
+        }
+        .files a:hover { color: var(--accent); padding-left: 8px; }
+        code {
+            background: rgba(16,26,48,.85);
+            border: 1px solid #2a3a63;
+            border-radius: 7px;
+            padding: 2px 6px;
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            font-size: .92em;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 860px) {
+            .layout { grid-template-columns: 1fr; }
+            .hero, .card { padding: 14px; border-radius: 14px; }
+            body { padding: 16px 12px; }
+        }
     </style>
 </head>
 <body>
     <div class="wrap">
         <section class="hero">
-            <h1>NeuroLink Rust UI</h1>
-            <p class="sub">Single service mode: upload files from browser, then share links from <code>/shared</code>.</p>
-            <div class="row" style="margin-top:10px;">
+            <h1>NeuroLink</h1>
+            <p class="sub">Minimal cyberpunk file transfer. Upload from browser, share from <code>/shared</code>.</p>
+            <div class="row">
                 <span class="pill">API: <code>/transfer/*</code></span>
                 <span class="pill">Health: <code>/health</code></span>
                 <span class="pill">Downloads: <code>/shared/&lt;filename&gt;</code></span>
             </div>
         </section>
 
-        <section class="card">
-            <label for="fileInput">Choose file</label>
-            <input id="fileInput" type="file" />
-            <button id="uploadBtn">Upload</button>
-            <div class="progress"><div id="bar" class="bar"></div></div>
-            <div id="status"></div>
-        </section>
+        <div class="layout">
+            <section class="card">
+                <h3>Upload</h3>
+                <label for="fileInput">Choose file</label>
+                <input id="fileInput" type="file" />
+                <button id="uploadBtn">Upload</button>
+                <div class="progress"><div id="bar" class="bar"></div></div>
+                <div id="status"></div>
+            </section>
 
-        <section class="card">
-            <h3 style="margin-top:0;">Files in shared folder</h3>
-            <p class="muted">Fetched from <code>/files</code>, each item downloads from <code>/shared/&lt;filename&gt;</code>.</p>
-            <ul id="files" class="files"></ul>
-        </section>
+            <section class="card">
+                <h3>Shared Files</h3>
+                <p class="muted">Fetched from <code>/files</code>. Click any item to download.</p>
+                <ul id="files" class="files"></ul>
+            </section>
+        </div>
     </div>
 
     <script>
