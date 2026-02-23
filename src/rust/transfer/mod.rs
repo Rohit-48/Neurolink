@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs;
+use tokio::fs::ReadDir;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 use sha2::{Sha256, Digest};
-use tracing::{info, error, debug};
+use tracing::{info, debug};
 use chrono::Utc;
-use anyhow::{Result, Context};
+use anyhow::Result;
 use tempfile::TempDir;
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
@@ -226,6 +227,23 @@ impl TransferManager {
             .ok_or_else(|| TransferError::TransferNotFound(transfer_id.to_string()))?;
         info!("Cancelled transfer: {}", transfer_id);
         Ok(())
+    }
+
+    pub async fn list_files(&self) -> Result<Vec<String>> {
+        let mut out = Vec::new();
+        let mut entries: ReadDir = fs::read_dir(&self.storage_path).await?;
+
+        while let Some(entry) = entries.next_entry().await? {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    out.push(name.to_string());
+                }
+            }
+        }
+
+        out.sort();
+        Ok(out)
     }
 }
 

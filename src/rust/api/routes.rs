@@ -47,6 +47,7 @@ pub struct StatusResponse {
 pub fn routes(transfer_manager: Arc<TransferManager>) -> Router {
     Router::new()
         .route("/", get(root_page))
+        .route("/files", get(list_files))
         .route("/transfer/init", post(init_transfer))
         .route("/transfer/chunk", post(receive_chunk))
         .route("/transfer/complete", post(complete_transfer))
@@ -58,37 +59,229 @@ pub fn routes(transfer_manager: Arc<TransferManager>) -> Router {
 async fn root_page() -> Html<&'static str> {
     Html(r#"
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NeuroLink Server</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #0a0a0a; color: #fff; }
-        h1 { color: #00ff88; }
-        .status { background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .endpoint { background: #2a2a2a; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; }
-        code { background: #333; padding: 2px 6px; border-radius: 3px; }
+        :root {
+            --bg: #0b1220;
+            --panel: #111a2b;
+            --accent: #22d3ee;
+            --accent-2: #f59e0b;
+            --text: #e5eef8;
+            --muted: #96a4b8;
+            --ok: #10b981;
+            --err: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            color: var(--text);
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            background:
+                radial-gradient(circle at 20% 20%, #1b2845 0%, transparent 35%),
+                radial-gradient(circle at 80% 10%, #15313e 0%, transparent 30%),
+                linear-gradient(140deg, #060b16, var(--bg));
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .wrap { max-width: 920px; margin: 0 auto; }
+        .hero {
+            background: linear-gradient(135deg, rgba(34,211,238,.15), rgba(245,158,11,.09));
+            border: 1px solid rgba(34,211,238,.4);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+        h1 { margin: 0 0 8px 0; font-size: 28px; letter-spacing: .3px; }
+        .sub { color: var(--muted); margin: 0; }
+        .card {
+            background: var(--panel);
+            border: 1px solid #1f3048;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        label { display: block; margin-bottom: 8px; color: var(--muted); }
+        input[type="file"] {
+            width: 100%;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+        button {
+            background: linear-gradient(135deg, var(--accent), #0ea5e9);
+            color: #04121a;
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .muted { color: var(--muted); }
+        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .pill {
+            border: 1px solid #284363;
+            border-radius: 999px;
+            padding: 6px 10px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .progress {
+            width: 100%;
+            height: 10px;
+            border-radius: 999px;
+            background: #1b2940;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            transition: width .15s linear;
+        }
+        #status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; }
+        #status.ok { color: var(--ok); }
+        #status.err { color: var(--err); }
+        .files a { color: var(--accent); text-decoration: none; }
+        .files li { margin: 6px 0; }
+        code { background: #122136; border-radius: 6px; padding: 2px 6px; }
     </style>
 </head>
 <body>
-    <h1>NeuroLink v2.0.0 Server</h1>
-    <div class="status">
-        <h2>Status: Running</h2>
-        <p>Rust-powered file transfer service</p>
+    <div class="wrap">
+        <section class="hero">
+            <h1>NeuroLink Rust UI</h1>
+            <p class="sub">Single service mode: upload files from browser, then share links from <code>/shared</code>.</p>
+            <div class="row" style="margin-top:10px;">
+                <span class="pill">API: <code>/transfer/*</code></span>
+                <span class="pill">Health: <code>/health</code></span>
+                <span class="pill">Downloads: <code>/shared/&lt;filename&gt;</code></span>
+            </div>
+        </section>
+
+        <section class="card">
+            <label for="fileInput">Choose file</label>
+            <input id="fileInput" type="file" />
+            <button id="uploadBtn">Upload</button>
+            <div class="progress"><div id="bar" class="bar"></div></div>
+            <div id="status"></div>
+        </section>
+
+        <section class="card">
+            <h3 style="margin-top:0;">Files in shared folder</h3>
+            <p class="muted">Fetched from <code>/files</code>, each item downloads from <code>/shared/&lt;filename&gt;</code>.</p>
+            <ul id="files" class="files"></ul>
+        </section>
     </div>
-    
-    <h2>API Endpoints</h2>
-    <div class="endpoint">POST /transfer/init - Initialize upload</div>
-    <div class="endpoint">POST /transfer/chunk - Upload chunk</div>
-    <div class="endpoint">POST /transfer/complete - Finalize</div>
-    <div class="endpoint">GET /transfer/:id/status - Check progress</div>
-    <div class="endpoint">GET /health - Health check</div>
-    
-    <h2>Usage</h2>
-    <p>Send files using the CLI:</p>
-    <div class="endpoint"><code>neuroshare send file.zip --host localhost --port 3000</code></div>
-    <p>For phone access, open <code>http://&lt;your-lan-ip&gt;:3000</code> (not <code>0.0.0.0</code>).</p>
-    
-    <p>For web UI, run: <code>neurolink --port 3000</code></p>
+
+    <script>
+        const CHUNK_SIZE = 1024 * 1024;
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const bar = document.getElementById('bar');
+        const statusEl = document.getElementById('status');
+        const filesEl = document.getElementById('files');
+
+        function setStatus(text, kind) {
+            statusEl.textContent = text;
+            statusEl.className = kind ? kind : '';
+        }
+
+        async function refreshFiles() {
+            const res = await fetch('/files');
+            const json = await res.json();
+            if (!res.ok || !json.success || !Array.isArray(json.data)) return;
+
+            if (json.data.length === 0) {
+                filesEl.innerHTML = '<li class="muted">No files yet.</li>';
+                return;
+            }
+
+            filesEl.innerHTML = json.data
+                .map(name => `<li><a href="/shared/${encodeURIComponent(name)}" target="_blank" rel="noreferrer">${name}</a></li>`)
+                .join('');
+        }
+
+        async function uploadFile(file) {
+            setStatus('Initializing transfer...', '');
+            const initRes = await fetch('/transfer/init', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename: file.name,
+                    total_size: file.size,
+                    chunk_size: CHUNK_SIZE
+                })
+            });
+            const initJson = await initRes.json();
+            if (!initRes.ok || !initJson.success || !initJson.data) {
+                throw new Error(initJson.error || 'Failed to initialize transfer');
+            }
+
+            const transferId = initJson.data.transfer_id;
+            const totalChunks = initJson.data.total_chunks;
+
+            for (let idx = 0; idx < totalChunks; idx++) {
+                const start = idx * CHUNK_SIZE;
+                const end = Math.min(file.size, start + CHUNK_SIZE);
+                const chunkBlob = file.slice(start, end);
+
+                const form = new FormData();
+                form.append('transfer_id', transferId);
+                form.append('chunk_index', idx.toString());
+                form.append('chunk', chunkBlob, `${file.name}.part${idx}`);
+
+                const chunkRes = await fetch('/transfer/chunk', { method: 'POST', body: form });
+                const chunkJson = await chunkRes.json();
+                if (!chunkRes.ok || !chunkJson.success) {
+                    throw new Error(chunkJson.error || `Chunk ${idx + 1} failed`);
+                }
+
+                const pct = Math.floor(((idx + 1) / totalChunks) * 100);
+                bar.style.width = `${pct}%`;
+                setStatus(`Uploading... ${pct}%`, '');
+            }
+
+            const doneRes = await fetch('/transfer/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transfer_id: transferId })
+            });
+            const doneJson = await doneRes.json();
+            if (!doneRes.ok || !doneJson.success) {
+                throw new Error(doneJson.error || 'Failed to complete transfer');
+            }
+
+            const link = `/shared/${encodeURIComponent(file.name)}`;
+            setStatus(`Upload complete. File available at ${link}`, 'ok');
+            await refreshFiles();
+        }
+
+        uploadBtn.addEventListener('click', async () => {
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) {
+                setStatus('Select a file first.', 'err');
+                return;
+            }
+
+            uploadBtn.disabled = true;
+            bar.style.width = '0%';
+            setStatus('', '');
+            try {
+                await uploadFile(file);
+            } catch (err) {
+                setStatus(err.message || 'Upload failed', 'err');
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        });
+
+        refreshFiles();
+    </script>
 </body>
 </html>
 "#)
@@ -100,6 +293,29 @@ async fn health_check() -> Json<ApiResponse<String>> {
         data: Some("healthy".to_string()),
         error: None,
     })
+}
+
+async fn list_files(
+    State(manager): State<Arc<TransferManager>>,
+) -> impl IntoResponse {
+    match manager.list_files().await {
+        Ok(files) => (
+            StatusCode::OK,
+            Json(ApiResponse {
+                success: true,
+                data: Some(files),
+                error: None,
+            }),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse::<Vec<String>> {
+                success: false,
+                data: None,
+                error: Some(e.to_string()),
+            }),
+        ),
+    }
 }
 
 async fn init_transfer(
@@ -157,7 +373,7 @@ async fn receive_chunk(
     let mut chunk_index = None;
     let mut chunk_data = None;
 
-    while let Some(mut field) = multipart.next_field().await.map_err(|_| StatusCode::BAD_REQUEST)? {
+    while let Some(field) = multipart.next_field().await.map_err(|_| StatusCode::BAD_REQUEST)? {
         let name = field.name().unwrap_or("").to_string();
         
         match name.as_str() {
