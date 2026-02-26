@@ -38,25 +38,102 @@ function uiHtml() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NeuroLink (Express)</title>
   <style>
-    :root{--bg:#0b0f1f;--panel:#121a30;--line:#2b3658;--text:#e8eeff;--muted:#8fa0c7;--accent:#18f0ff;--ok:#2ee8a3;--err:#ff5d7c}
-    *{box-sizing:border-box} body{margin:0;background:radial-gradient(1200px 700px at 10% -10%, rgba(24,240,255,.15), transparent 50%),linear-gradient(140deg,#06070f,var(--bg));color:var(--text);font-family:Inter,system-ui,sans-serif;padding:20px}
-    .wrap{max-width:1000px;margin:0 auto}.hero,.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
-    .hero{margin-bottom:12px}.layout{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
-    .drop{border:1px dashed #3a4a75;border-radius:10px;padding:10px;margin-bottom:8px}.drop.active{border-color:var(--accent)}
-    input[type=file]{width:100%} button{border:0;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}
-    .primary{background:linear-gradient(95deg,var(--accent),#57f6ff);color:#001319}.ghost{background:transparent;color:var(--text);border:1px solid #3a4a75}
-    .progress{height:8px;background:#182342;border:1px solid #2c3b66;border-radius:999px;overflow:hidden;margin-top:10px}.bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#ffb020)}
-    .muted{color:var(--muted)} #status{min-height:18px;margin-top:8px}.ok{color:var(--ok)} .err{color:var(--err)}
-    .files{list-style:none;padding:0;margin:0;max-height:420px;overflow:auto}.files li{border-bottom:1px solid #202c4a;padding:8px 0}
-    .row{display:flex;justify-content:space-between;align-items:center;gap:8px}.meta{color:var(--muted);font-size:12px}
-    @media (max-width:860px){.layout{grid-template-columns:1fr}}
+    :root{
+      --bg-0:#070912;--bg-1:#0d1324;--bg-2:#0f1830;
+      --panel:#121b34;--panel-soft:#0f172d;--line:#2d3c68;
+      --text:#e8efff;--muted:#93a3c9;
+      --accent:#1ff2ff;--accent-2:#5cf7ff;--accent-warm:#ffb020;
+      --ok:#2ee8a3;--err:#ff5d7c;
+      --shadow:0 18px 40px rgba(2,7,22,.45);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;color:var(--text);
+      font-family:"Sora","Inter",system-ui,sans-serif;
+      background:
+        radial-gradient(1100px 700px at 12% -10%, rgba(31,242,255,.18), transparent 52%),
+        radial-gradient(900px 600px at 110% -10%, rgba(255,176,32,.14), transparent 48%),
+        linear-gradient(145deg,var(--bg-0),var(--bg-1) 55%,var(--bg-2));
+      padding:24px 16px 34px;
+      min-height:100vh;
+      letter-spacing:.01em;
+    }
+    body::before{
+      content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;
+      background-image:
+        linear-gradient(to right, rgba(147,163,201,.2) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(147,163,201,.2) 1px, transparent 1px);
+      background-size:28px 28px;
+      -webkit-mask-image:radial-gradient(circle at 50% 15%, black, transparent 72%);
+      mask-image:radial-gradient(circle at 50% 15%, black, transparent 72%);
+    }
+    .wrap{max-width:1040px;margin:0 auto;position:relative;z-index:1}
+    .hero,.card{
+      background:linear-gradient(155deg,var(--panel),var(--panel-soft));
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+    }
+    .hero{margin-bottom:14px;padding:18px}
+    .layout{display:grid;grid-template-columns:1.16fr .84fr;gap:12px}
+    .card{padding:14px}
+    h1{margin:0;font-size:clamp(24px,4vw,34px);line-height:1.04}
+    h3{margin:2px 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:#c9d6f7}
+    .hero-sub{margin:.5rem 0 0;color:var(--muted);font-size:14px}
+    .chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .chip{
+      border:1px solid #3a4b78;border-radius:999px;padding:6px 10px;
+      background:rgba(18,28,54,.6);color:var(--muted);font-size:12px
+    }
+    .drop{
+      border:1px dashed #3a4a75;border-radius:12px;padding:12px;margin-bottom:9px;
+      background:rgba(10,16,34,.58);transition:border-color .15s ease,background .15s ease
+    }
+    .drop.active{border-color:var(--accent);background:rgba(31,242,255,.08)}
+    input[type=file]{width:100%;color:var(--text);margin-bottom:8px}
+    button{
+      border:0;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer;
+      transition:transform .12s ease,box-shadow .12s ease,filter .12s ease
+    }
+    button:hover{transform:translateY(-1px);filter:brightness(1.03)}
+    .primary{
+      background:linear-gradient(95deg,var(--accent),var(--accent-2));color:#001319;
+      box-shadow:0 10px 26px rgba(31,242,255,.32)
+    }
+    .ghost{background:transparent;color:var(--text);border:1px solid #3a4a75}
+    .progress{
+      height:9px;background:#182342;border:1px solid #2c3b66;border-radius:999px;
+      overflow:hidden;margin-top:10px
+    }
+    .bar{
+      height:100%;width:0%;
+      background:linear-gradient(90deg,var(--accent),var(--accent-warm));
+      transition:width .12s linear
+    }
+    .muted{color:var(--muted)}
+    #status{min-height:20px;margin-top:8px;font-size:14px}
+    #selection{font-size:13px}
+    .ok{color:var(--ok)} .err{color:var(--err)}
+    .files{list-style:none;padding:0;margin:0;max-height:460px;overflow:auto}
+    .files li{border-bottom:1px solid #243154;padding:9px 0}
+    .files li:last-child{border-bottom:0}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .meta{color:var(--muted);font-size:12px}
+    a{color:#8ef8ff;text-decoration:none}
+    a:hover{color:var(--accent)}
+    @media (max-width:860px){.layout{grid-template-columns:1fr}.hero,.card{padding:12px}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <section class="hero">
-      <h1 style="margin:0">NeuroLink (Express)</h1>
-      <p class="muted" style="margin:.4rem 0 0">Upload batches + chunk download. API parity with neurolinkrs core routes.</p>
+      <h1>NeuroLink</h1>
+      <p class="hero-sub">Express runtime · batch uploads, archive download, and per-file chunk extraction.</p>
+      <div class="chip-row">
+        <span class="chip">GET /health</span>
+        <span class="chip">GET /uploads</span>
+        <span class="chip">GET /download/batch/:id</span>
+      </div>
     </section>
     <div class="layout">
       <section class="card">
