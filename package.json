@@ -1,46 +1,17 @@
 {
-  "name": "neurolink",
-  "version": "1.0.0",
+  "name": "neurolink-monorepo",
+  "version": "2.0.0",
+  "private": true,
   "type": "module",
-  "bin": {
-    "neurolink": "./dist/cli/main.js",
-    "neuroshare": "./dist/cli/share.js"
-  },
-  "scripts": {
-    "start": "node dist/cli.js",
-    "build": "tsc",
-    "dev": "tsx watch src/cli.ts",
-    "prepare": "npm run build"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "ascii-logo.txt"
+  "workspaces": [
+    "apps/neurolink"
   ],
-  "dependencies": {
-    "@hono/node-server": "^1.13.8",
-    "@types/archiver": "^7.0.0",
-    "@types/form-data": "^2.2.1",
-    "archiver": "^7.0.1",
-    "bonjour": "^3.5.0",
-    "chalk": "^5.4.1",
-    "commander": "^12.1.0",
-    "form-data": "^4.0.5",
-    "hono": "^4.6.20",
-    "inquirer": "^13.2.2",
-    "mime-types": "^2.1.35",
-    "node-fetch": "^3.3.2",
-    "ora": "^9.3.0",
-    "qrcode": "^1.5.4",
-    "terminal-image": "^4.2.0"
+  "scripts": {
+    "dev:neurolink": "node apps/neurolink/bin/neurolink.js --port 3000 --storage ./apps/neurolink/shared",
+    "dev:neurolinkrs": "cargo run -p neurolinkrs --bin neurolinkrs -- --port 3001 --storage ./apps/neurolinkrs/shared",
+    "build:neurolinkrs": "cargo build -p neurolinkrs --release --bin neurolinkrs",
+    "test:neurolinkrs": "cargo test -p neurolinkrs --test issue_tasks_validator"
   },
-  "devDependencies": {
-    "@types/bonjour": "^3.5.13",
-    "@types/inquirer": "^9.0.7",
-    "@types/mime-types": "^2.1.4",
-    "@types/node": "^22.13.1",
-    "@types/qrcode": "^1.5.5",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }

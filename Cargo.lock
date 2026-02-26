@@ -1064,7 +1064,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "neurolink-rust"
+name = "neurolinkrs"
 version = "2.0.0"
 dependencies = [
  "anyhow",
