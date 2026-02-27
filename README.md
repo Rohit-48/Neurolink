@@ -47,7 +47,9 @@ When you launch commands in a terminal, each CLI prints a colored ASCII banner:
 
 ## Demo Video
 
-- `docs/video/neurolink_demo_both_servers.mp4`
+<video src="docs/video/neurolink_demo_both_servers.mp4" controls muted width="900"></video>
+
+[Download demo video](docs/video/neurolink_demo_both_servers.mp4)
 
 ## Core parity (both apps)
 
