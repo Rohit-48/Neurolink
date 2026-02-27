@@ -2,6 +2,23 @@
 import { resolve } from "path";
 import { startNeurolink } from "../src/server.js";
 
+function printNeurolinkBanner() {
+  const lines = [
+    "                  _   _  _____ _   _ ____   ___  _     ___ _   _ _  __",
+    "                 | \\ | || ____| | | |  _ \\ / _ \\| |   |_ _| \\ | | |/ /",
+    "                 |  \\| ||  _| | | | | |_) | | | | |    | ||  \\| | ' / ",
+    "                 | |\\  || |___| |_| |  _ <| |_| | |___ | || |\\  | . \\ ",
+    "                 |_| \\_||_____|\\___/|_| \\_\\\\___/|_____|___|_| \\_|_|\\_\\",
+  ];
+  const shades = [97, 37, 96, 37, 97];
+  console.log("");
+  lines.forEach((line, idx) => {
+    console.log(`\x1b[1;${shades[idx]}m${line}\x1b[0m`);
+  });
+  console.log("\x1b[1;97m                     NEUROLINK · Express Runtime\x1b[0m");
+  console.log("");
+}
+
 function parseArgs(argv) {
   const out = {
     port: 3000,
@@ -26,6 +43,7 @@ function parseArgs(argv) {
 }
 
 const args = parseArgs(process.argv.slice(2));
+printNeurolinkBanner();
 startNeurolink({
   port: args.port,
   storage: resolve(args.storage),

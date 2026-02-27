@@ -3,7 +3,7 @@
 Two separate apps now live in this repo:
 
 - `neurolink` (Express, Node.js) in `apps/neurolink`
-- `neurolinkrs` (Rust, Axum) in `apps/neurolinkrs`
+- `neurolinkrs` / `neurolinkd` (Rust, Axum) in `apps/neurolinkrs`
 
 ## Run
 
@@ -19,6 +19,12 @@ Rust app (`neurolinkrs`, default `3001`):
 npm run dev:neurolinkrs
 ```
 
+Rust daemon command (`neurolinkd`, default `3001`):
+
+```bash
+npm run dev:neurolinkd
+```
+
 ## Build
 
 Rust release build:
@@ -26,6 +32,14 @@ Rust release build:
 ```bash
 npm run build:neurolinkrs
 ```
+
+## CLI Banners
+
+When you launch commands in a terminal, each CLI prints a colored ASCII banner:
+
+- `neurolink` -> `NEUROLINK · Express Runtime`
+- `neurolinkrs` -> `NEUROLINKRS 2.0 - Rust Service`
+- `neurolinkd` -> `NEUROLINKD 2.0 - Rust Daemon`
 
 ## Core parity (both apps)
 

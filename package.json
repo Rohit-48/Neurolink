@@ -9,7 +9,8 @@
   "scripts": {
     "dev:neurolink": "node apps/neurolink/bin/neurolink.js --port 3000 --storage ./apps/neurolink/shared",
     "dev:neurolinkrs": "cargo run -p neurolinkrs --bin neurolinkrs -- --port 3001 --storage ./apps/neurolinkrs/shared",
-    "build:neurolinkrs": "cargo build -p neurolinkrs --release --bin neurolinkrs",
+    "dev:neurolinkd": "cargo run -p neurolinkrs --bin neurolinkd -- --port 3001 --storage ./apps/neurolinkrs/shared",
+    "build:neurolinkrs": "cargo build -p neurolinkrs --release --bin neurolinkrs --bin neurolinkd",
     "test:neurolinkrs": "cargo test -p neurolinkrs --test issue_tasks_validator"
   },
   "dependencies": {},

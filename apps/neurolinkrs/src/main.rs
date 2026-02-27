@@ -1,4 +1,5 @@
 use std::net::{IpAddr, SocketAddr, UdpSocket};
+use std::path::Path;
 use std::sync::Arc;
 use axum::Router;
 use clap::Parser;
@@ -46,27 +47,37 @@ fn is_unsafe_browser_port(port: u16) -> bool {
 }
 
 fn print_elephant_banner() {
+    let cmd = std::env::args()
+        .next()
+        .as_deref()
+        .and_then(|p| Path::new(p).file_name())
+        .and_then(|n| n.to_str())
+        .unwrap_or("neurolinkrs")
+        .to_string();
+    let label = if cmd.contains("neurolinkd") {
+        "NEUROLINKD 2.0 - Rust Daemon"
+    } else {
+        "NEUROLINKRS 2.0 - Rust Service"
+    };
+
     let art = [
-        "                           _.-- ,.--.",
-        "                         .'   .'    /",
-        "                         | @       |'..--------._",
-        "                        /      \\._/              '.",
-        "                       /  .-.-                     \\",
-        "                      (  /    \\                     \\",
-        "                       \\\\      '.                  | #",
-        "                        \\\\       \\   -.           /",
-        "                         :\\       |    )._____.'   \\",
-        "                          \"       |   /  \\  |  \\    )",
-        "                                  |   |./'  :__ \\.-'",
-        "                                  '--'",
+        "                       __     __",
+        "                     /`  `\\_/`  \\",
+        "                    /  _  _   _  \\",
+        "                    | (o)(o) (o) |",
+        "                    |      ^     |",
+        "                    |  '\\___/'   |",
+        "                     \\___________/",
+        "                        /  |  \\",
+        "                       /___|___\\",
     ];
-    let colors = [159, 153, 147, 141, 135, 99, 63, 39, 45, 51, 87, 123];
+    let colors = [97, 37, 96, 37, 97, 37, 96, 37, 97];
 
     println!();
     for (line, color) in art.iter().zip(colors.iter()) {
         println!("\x1b[1;38;5;{}m{}\x1b[0m", color, line);
     }
-    println!("\x1b[1;38;5;220m                 NEUROLINKRS 2.0 - Painted Elephant\x1b[0m");
+    println!("\x1b[1;97m                     {}\x1b[0m", label);
     println!();
 }
 

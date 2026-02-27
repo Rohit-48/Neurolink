@@ -7,6 +7,10 @@ edition = "2021"
 name = "neurolinkrs"
 path = "src/main.rs"
 
+[[bin]]
+name = "neurolinkd"
+path = "src/main.rs"
+
 [dependencies]
 tokio = { version = "1.40.0", features = ["full"] }
 axum = { version = "0.7.0", features = ["multipart"] }
