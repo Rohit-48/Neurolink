@@ -4,3 +4,6 @@ dist
 # Added by cargo
 target/
 **/target/
+
+# local shared
+./shared/
