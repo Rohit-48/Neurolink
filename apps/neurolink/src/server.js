@@ -39,206 +39,147 @@ function uiHtml() {
   <title>NeuroLink (Express)</title>
   <style>
     :root{
-      --bg:#0a0a0a;
-      --surface:#111111;
-      --surface-2:#151515;
-      --line:#2b2b2b;
-      --line-soft:#202020;
-      --text:#f5f5f5;
-      --muted:#a8a8a8;
-      --ok:#d9d9d9;
-      --err:#bdbdbd;
-      --radius:14px;
-      --shadow:0 14px 34px rgba(0,0,0,.42);
+      --bg:#f7f7f4;
+      --ink:#111111;
+      --muted:#666666;
+      --line:#d9d9d3;
+      --panel:#ffffff;
+      --ok:#1f1f1f;
+      --err:#3b3b3b;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      color:var(--text);
-      font-family:"Sora","Inter",system-ui,sans-serif;
-      background:
-        radial-gradient(800px 500px at 10% -10%, rgba(255,255,255,.07), transparent 56%),
-        linear-gradient(145deg,#050505,var(--bg));
+      color:var(--ink);
+      font-family:"Styrene B","Avenir Next","Inter",system-ui,sans-serif;
+      background:radial-gradient(circle at top, #ffffff 0%, var(--bg) 55%);
       min-height:100vh;
-      padding:26px 16px 34px;
-      letter-spacing:.01em;
+      padding:30px 16px 50px;
+      letter-spacing:0.01em;
     }
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      opacity:.1;
-      background-image:
-        linear-gradient(to right, rgba(255,255,255,.15) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,.15) 1px, transparent 1px);
-      background-size:28px 28px;
-      mask-image:radial-gradient(circle at 50% 18%, black, transparent 72%);
-      -webkit-mask-image:radial-gradient(circle at 50% 18%, black, transparent 72%);
+    .wrap{max-width:920px; margin:0 auto}
+    .hero{
+      border-top:2px solid var(--ink);
+      padding-top:18px;
+      margin-bottom:22px;
     }
-    .wrap{max-width:1040px; margin:0 auto; position:relative; z-index:1}
-    .hero,.card{
-      background:linear-gradient(160deg,var(--surface),var(--surface-2));
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-    }
-    .hero{padding:20px; margin-bottom:14px}
-    .layout{display:grid; grid-template-columns:1.08fr .92fr; gap:12px}
-    .card{padding:15px}
     h1{
       margin:0;
-      font-size:clamp(27px,4vw,40px);
-      line-height:1.02;
-      letter-spacing:.02em;
-      font-weight:700;
+      font-family:"Tiempos Headline","Iowan Old Style","Times New Roman",serif;
+      font-size:clamp(34px,6vw,58px);
+      font-weight:500;
+      letter-spacing:-0.02em;
+      line-height:.98;
     }
-    h3{
-      margin:0 0 11px;
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      color:#d8d8d8;
-    }
-    .hero-sub{margin:.58rem 0 0; color:var(--muted); font-size:14px}
-    .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
-    .chip{
-      border:1px solid #3a3a3a;
-      border-radius:999px;
-      padding:6px 11px;
-      background:rgba(255,255,255,.03);
+    .sub{
+      margin:12px 0 0;
       color:var(--muted);
-      font-size:12px;
+      font-size:16px;
+      max-width:680px;
+      line-height:1.6;
     }
-    .drop{
-      border:1px dashed #3f3f3f;
-      border-radius:12px;
-      padding:12px;
-      margin-bottom:9px;
-      background:rgba(255,255,255,.02);
-      transition:border-color .16s ease, background .16s ease;
-    }
-    .drop.active{
-      border-color:#ffffff;
-      background:rgba(255,255,255,.06);
-    }
-    input[type=file]{width:100%; color:var(--text); margin-bottom:8px}
-    .actions{display:flex; gap:8px}
-    button{
-      border:1px solid #3c3c3c;
-      border-radius:10px;
-      padding:9px 12px;
-      font-weight:700;
-      cursor:pointer;
-      color:#f3f3f3;
-      background:#1a1a1a;
-      transition:transform .12s ease, background .12s ease, border-color .12s ease;
-    }
-    button:hover{
-      transform:translateY(-1px);
-      background:#212121;
-      border-color:#555555;
-    }
-    .primary{
-      background:#f3f3f3;
-      color:#0f0f0f;
-      border-color:#f3f3f3;
-    }
-    .primary:hover{
-      background:#ffffff;
-      border-color:#ffffff;
-    }
-    .ghost{
-      background:transparent;
-      color:var(--text);
-      border:1px solid #3a3a3a;
-    }
-    .progress{
-      height:9px;
-      background:#131313;
-      border:1px solid #303030;
+    .meta{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+    .pill{
+      border:1px solid var(--line);
       border-radius:999px;
-      overflow:hidden;
-      margin-top:10px;
+      padding:5px 11px;
+      font-size:12px;
+      color:#2c2c2c;
+      background:#fff;
     }
-    .bar{
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg,#f0f0f0,#9d9d9d);
-      transition:width .12s linear;
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:0 8px 24px rgba(0,0,0,.04);
     }
-    .muted{color:var(--muted)}
-    #status{min-height:20px; margin-top:8px; font-size:14px}
-    #selection{font-size:13px}
+    .card + .card{margin-top:16px}
+    .title{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#4f4f4f}
+    .hint{margin:0 0 14px;font-size:14px;color:var(--muted)}
+    .drop{
+      border:1px dashed #c9c9c3;
+      border-radius:12px;
+      padding:14px;
+      margin-bottom:12px;
+      background:#fcfcfb;
+      color:#444;
+      font-size:14px;
+    }
+    .drop.active{border-color:#999;background:#f2f2ee}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    button,.link-btn{
+      border-radius:11px;
+      border:1px solid #c7c7c1;
+      padding:10px 13px;
+      font-size:13px;
+      font-weight:600;
+      cursor:pointer;
+      background:#fff;
+      color:#111;
+    }
+    .primary{background:#111;border-color:#111;color:#fff}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .progress{margin-top:12px;height:8px;border-radius:999px;background:#ededea;overflow:hidden}
+    .bar{height:100%;width:0%;background:linear-gradient(90deg,#202020,#545454);transition:width .15s linear}
+    #status{min-height:20px;margin-top:10px;color:#404040;font-size:14px}
+    #selection{margin:5px 0 0;color:var(--muted);font-size:13px}
     .ok{color:var(--ok)}
     .err{color:var(--err)}
-    .files{
-      list-style:none;
-      margin:0;
-      padding:0;
-      max-height:460px;
-      overflow:auto;
-      border:1px solid var(--line-soft);
-      border-radius:12px;
-      background:rgba(0,0,0,.22);
-    }
-    .files li{
-      border-bottom:1px solid var(--line-soft);
-      padding:10px 11px;
-    }
-    .files li:last-child{border-bottom:0}
-    .row{display:flex; justify-content:space-between; align-items:center; gap:8px}
-    .meta{color:var(--muted); font-size:12px}
-    a{
-      color:#f3f3f3;
-      text-decoration:none;
-      transition:opacity .12s ease;
-    }
-    a:hover{opacity:.7}
-    @media (max-width:860px){
-      .layout{grid-template-columns:1fr}
-      .hero,.card{padding:13px}
-      .actions{flex-wrap:wrap}
-    }
+    .files{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+    .files li{border-bottom:1px solid var(--line);padding:12px 0}
+    .batch-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:12px;margin-bottom:8px}
+    .file-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0}
+    a.file-link{color:#121212;text-decoration:none;font-size:14px;overflow-wrap:anywhere}
+    a.file-link:hover{text-decoration:underline}
+    .size{color:var(--muted);font-size:12px}
+    .hidden-input{display:none}
+    @media (max-width:760px){body{padding:22px 12px 34px}.card{padding:14px}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <section class="hero">
       <h1>NeuroLink</h1>
-      <p class="hero-sub">Minimal monochrome file transfer with batch upload and chunk download.</p>
-      <div class="chip-row">
-        <span class="chip">GET /health</span>
-        <span class="chip">GET /uploads</span>
-        <span class="chip">GET /download/batch/:id</span>
+      <p class="sub">Fast local transfers with clean batch uploads. Pick a folder, upload once, share single files or a full batch zip.</p>
+      <div class="meta">
+        <span class="pill">Express Runtime</span>
+        <span class="pill">Batch Download: ZIP</span>
+        <span class="pill">API: /transfer/*</span>
       </div>
     </section>
-    <div class="layout">
-      <section class="card">
-        <h3>Upload</h3>
-        <div id="drop" class="drop">
-          <input id="fileInput" type="file" multiple />
-          <div class="muted">Drop files here or browse.</div>
-        </div>
-        <div class="actions">
-          <button id="uploadBtn" class="primary">Upload Batch</button>
-          <button id="refreshBtn" class="ghost" type="button">Refresh</button>
-        </div>
-        <div class="progress"><div id="bar" class="bar"></div></div>
-        <div id="status"></div>
-        <div id="selection" class="muted"></div>
-      </section>
-      <section class="card">
-        <h3>Upload Batches</h3>
-        <ul id="files" class="files"></ul>
-      </section>
-    </div>
+
+    <section class="card">
+      <h2 class="title">Upload</h2>
+      <p class="hint">Primary flow: click Upload Folder, then Start Upload.</p>
+      <div id="drop" class="drop">Drop files/folder here or use the buttons below.</div>
+      <input id="folderInput" class="hidden-input" type="file" webkitdirectory directory multiple />
+      <input id="fileInput" class="hidden-input" type="file" multiple />
+      <div class="actions">
+        <button id="pickFolderBtn" class="primary" type="button">Upload Folder</button>
+        <button id="pickFilesBtn" type="button">Select Files</button>
+        <button id="startUploadBtn" type="button">Start Upload</button>
+        <button id="refreshBtn" type="button">Refresh</button>
+      </div>
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <div id="status"></div>
+      <div id="selection"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="title">Upload Batches</h2>
+      <p class="hint">Newest batches first. Every upload run creates one batch.</p>
+      <ul id="files" class="files"></ul>
+    </section>
   </div>
   <script>
     const CHUNK_SIZE = 1024 * 1024;
+    const folderInput = document.getElementById("folderInput");
     const fileInput = document.getElementById("fileInput");
+    const pickFolderBtn = document.getElementById("pickFolderBtn");
+    const pickFilesBtn = document.getElementById("pickFilesBtn");
+    const startUploadBtn = document.getElementById("startUploadBtn");
     const drop = document.getElementById("drop");
-    const uploadBtn = document.getElementById("uploadBtn");
     const refreshBtn = document.getElementById("refreshBtn");
     const bar = document.getElementById("bar");
     const statusEl = document.getElementById("status");
@@ -247,54 +188,44 @@ function uiHtml() {
     let selectedFiles = [];
 
     const setStatus = (text, kind = "") => { statusEl.className = kind; statusEl.textContent = text; };
-    const formatBytes = (n) => n < 1024 ? \`\${n} B\` : n < 1024*1024 ? \`\${(n/1024).toFixed(1)} KB\` : \`\${(n/(1024*1024)).toFixed(2)} MB\`;
+    const formatBytes = (n) => n < 1024 ? (n + " B") : n < 1024 * 1024 ? ((n / 1024).toFixed(1) + " KB") : ((n / (1024 * 1024)).toFixed(2) + " MB");
     const updateSelection = () => {
       if (!selectedFiles.length) { selectionEl.textContent = "No files selected"; return; }
       const total = selectedFiles.reduce((a, f) => a + f.size, 0);
-      selectionEl.textContent = \`\${selectedFiles.length} file(s) selected · \${formatBytes(total)}\`;
+      selectionEl.textContent = selectedFiles.length + " files selected · " + formatBytes(total);
     };
+    const setFilesFromList = (list) => { selectedFiles = Array.from(list || []); updateSelection(); };
 
     async function refreshFiles() {
       const res = await fetch("/uploads");
       const json = await res.json();
       if (!res.ok || !json.success || !Array.isArray(json.data)) {
-        filesEl.innerHTML = '<li class="muted">Failed to load uploads.</li>'; return;
+        filesEl.innerHTML = "<li>Failed to load uploads.</li>";
+        return;
       }
       if (json.data.length === 0) {
-        filesEl.innerHTML = '<li class="muted">No uploads yet.</li>'; return;
+        filesEl.innerHTML = "<li>No uploads yet.</li>";
+        return;
       }
+
       filesEl.innerHTML = json.data.map((batch) => {
         const when = new Date(batch.uploaded_at).toLocaleString();
-        const items = batch.files.map((file) => \`
-          <div class="row">
-            <a href="/shared/\${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer">\${file.name}</a>
-            <div class="meta">
-              \${formatBytes(file.size)}
-              <button class="ghost chunk-btn" data-file="\${encodeURIComponent(file.name)}" style="margin-left:6px;padding:3px 7px;font-size:11px">Chunk</button>
-            </div>
-          </div>\`).join("");
-        return \`<li>
-          <div class="row meta"><span>\${when} · \${batch.files.length} file(s)</span>
-            <a class="ghost" style="padding:4px 8px;text-decoration:none;color:inherit" href="/download/batch/\${encodeURIComponent(batch.batch_id)}">Download Batch</a>
-          </div>
-          \${items}
-        </li>\`;
-      }).join("");
+        const items = batch.files.map((file) =>
+          '<div class="file-row">' +
+            '<a class="file-link" href="/shared/' + encodeURIComponent(file.name) + '" target="_blank" rel="noreferrer">' + file.name + "</a>" +
+            '<span class="size">' + formatBytes(file.size) + "</span>" +
+          "</div>"
+        ).join("");
 
-      filesEl.querySelectorAll(".chunk-btn").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          const encoded = btn.dataset.file;
-          const idxRaw = prompt("Chunk index (0-based):", "0");
-          if (idxRaw == null) return;
-          const sizeRaw = prompt("Chunk size in bytes:", "1048576");
-          if (sizeRaw == null) return;
-          const idx = parseInt(idxRaw, 10);
-          const size = parseInt(sizeRaw, 10);
-          if (Number.isNaN(idx) || Number.isNaN(size) || idx < 0 || size <= 0) { setStatus("Invalid chunk values", "err"); return; }
-          window.open(\`/download/chunk/\${encoded}?index=\${idx}&chunk_size=\${size}\`, "_blank");
-        });
-      });
+        return (
+          "<li>" +
+            '<div class="batch-head"><span>' + when + " · " + batch.files.length + ' file(s)</span>' +
+              '<a class="link-btn" href="/download/batch/' + encodeURIComponent(batch.batch_id) + '">Download ZIP</a>' +
+            "</div>" +
+            items +
+          "</li>"
+        );
+      }).join("");
     }
 
     async function uploadFile(file, batchId, doneBytes, totalBytes) {
@@ -307,18 +238,20 @@ function uiHtml() {
       if (!initRes.ok || !initJson.success || !initJson.data) throw new Error(initJson.error || "Init failed");
       const transferId = initJson.data.transfer_id;
       const totalChunks = initJson.data.total_chunks;
+
       for (let idx = 0; idx < totalChunks; idx++) {
         const chunkBlob = file.slice(idx * CHUNK_SIZE, Math.min(file.size, (idx + 1) * CHUNK_SIZE));
         const form = new FormData();
         form.append("transfer_id", transferId);
         form.append("chunk_index", String(idx));
-        form.append("chunk", chunkBlob, \`\${file.name}.part\${idx}\`);
+        form.append("chunk", chunkBlob, file.name + ".part" + idx);
         const chunkRes = await fetch("/transfer/chunk", { method: "POST", body: form });
         const chunkJson = await chunkRes.json();
-        if (!chunkRes.ok || !chunkJson.success) throw new Error(chunkJson.error || \`Chunk \${idx + 1} failed\`);
+        if (!chunkRes.ok || !chunkJson.success) throw new Error(chunkJson.error || ("Chunk " + (idx + 1) + " failed"));
         const uploaded = doneBytes + Math.min(file.size, (idx + 1) * CHUNK_SIZE);
-        bar.style.width = \`\${Math.floor((uploaded / totalBytes) * 100)}%\`;
+        bar.style.width = Math.floor((uploaded / totalBytes) * 100) + "%";
       }
+
       const doneRes = await fetch("/transfer/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -328,44 +261,50 @@ function uiHtml() {
       if (!doneRes.ok || !doneJson.success) throw new Error(doneJson.error || "Complete failed");
     }
 
-    uploadBtn.addEventListener("click", async () => {
-      if (!selectedFiles.length) { setStatus("Select files first", "err"); return; }
-      uploadBtn.disabled = true;
+    async function uploadBatch() {
+      if (!selectedFiles.length) { setStatus("Select files or a folder first.", "err"); return; }
+      startUploadBtn.disabled = true;
       bar.style.width = "0%";
       const totalBytes = selectedFiles.reduce((n, f) => n + f.size, 0);
-      const batchId = \`batch_\${Date.now()}\`;
+      const batchId = "batch_" + Date.now();
       let doneBytes = 0;
       try {
         for (let i = 0; i < selectedFiles.length; i++) {
           const file = selectedFiles[i];
-          setStatus(\`Uploading \${i + 1}/\${selectedFiles.length}: \${file.name}\`);
+          setStatus("Uploading " + (i + 1) + "/" + selectedFiles.length + ": " + file.name);
           await uploadFile(file, batchId, doneBytes, totalBytes);
           doneBytes += file.size;
         }
-        setStatus(\`Batch upload complete (\${selectedFiles.length} file(s))\`, "ok");
+        setStatus("Batch upload complete (" + selectedFiles.length + " file(s))", "ok");
         await refreshFiles();
       } catch (err) {
         setStatus(err.message || "Upload failed", "err");
       } finally {
-        uploadBtn.disabled = false;
+        startUploadBtn.disabled = false;
       }
-    });
+    }
 
+    pickFolderBtn.addEventListener("click", () => folderInput.click());
+    pickFilesBtn.addEventListener("click", () => fileInput.click());
+    startUploadBtn.addEventListener("click", uploadBatch);
     refreshBtn.addEventListener("click", refreshFiles);
-    fileInput.addEventListener("change", () => { selectedFiles = Array.from(fileInput.files || []); updateSelection(); });
+    folderInput.addEventListener("change", () => setFilesFromList(folderInput.files));
+    fileInput.addEventListener("change", () => setFilesFromList(fileInput.files));
+
     drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("active"); });
     drop.addEventListener("dragleave", () => drop.classList.remove("active"));
     drop.addEventListener("drop", (e) => {
-      e.preventDefault(); drop.classList.remove("active");
-      if (e.dataTransfer?.files?.length) { selectedFiles = Array.from(e.dataTransfer.files); updateSelection(); }
+      e.preventDefault();
+      drop.classList.remove("active");
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) setFilesFromList(e.dataTransfer.files);
     });
+
     updateSelection();
     refreshFiles();
   </script>
 </body>
 </html>`;
 }
-
 export async function startNeurolink({ port = 3000, storage = "./shared" } = {}) {
   const app = express();
   app.use(express.json({ limit: "25mb" }));

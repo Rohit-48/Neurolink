@@ -1,6 +1,6 @@
 use axum::{
     body::Body,
-    extract::{Multipart, Path, Query, State},
+    extract::{Multipart, Path, State},
     http::{header, HeaderValue, StatusCode},
     response::{Html, IntoResponse, Json, Response},
     routing::{post, get},
@@ -47,19 +47,12 @@ pub struct StatusResponse {
     pub progress: String,
 }
 
-#[derive(Deserialize)]
-pub struct ChunkDownloadQuery {
-    pub index: usize,
-    pub chunk_size: usize,
-}
-
 pub fn routes(transfer_manager: Arc<TransferManager>) -> Router {
     Router::new()
         .route("/", get(root_page))
         .route("/files", get(list_files))
         .route("/uploads", get(list_uploads))
         .route("/download/batch/:batch_id", get(download_batch))
-        .route("/download/chunk/:filename", get(download_chunk))
         .route("/transfer/init", post(init_transfer))
         .route("/transfer/chunk", post(receive_chunk))
         .route("/transfer/complete", post(complete_transfer))
@@ -78,196 +71,180 @@ async fn root_page() -> Html<&'static str> {
     <title>NeuroLink</title>
     <style>
         :root {
-            --bg-0: #06070f;
-            --bg-1: #0b0f1e;
-            --panel: #0f1426;
-            --panel-soft: #111a2f;
-            --line: #27304b;
-            --text: #e8eeff;
-            --muted: #8fa0c7;
-            --accent: #18f0ff;
-            --accent-2: #ffb020;
-            --ok: #2ee8a3;
-            --err: #ff5d7c;
+            --bg: #f7f7f4;
+            --ink: #111111;
+            --muted: #666666;
+            --line: #d9d9d3;
+            --panel: #ffffff;
+            --ok: #1f1f1f;
+            --err: #3b3b3b;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            color: var(--text);
-            font-family: "Sora", "JetBrains Mono", "Fira Code", sans-serif;
-            background:
-                radial-gradient(1200px 700px at 10% -10%, rgba(24,240,255,.15), transparent 50%),
-                radial-gradient(900px 500px at 100% 0%, rgba(255,176,32,.12), transparent 45%),
-                linear-gradient(140deg, var(--bg-0), var(--bg-1));
+            font-family: "Styrene B", "Avenir Next", "Inter", system-ui, sans-serif;
+            color: var(--ink);
+            background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 55%);
             min-height: 100vh;
-            padding: 28px 18px;
-            letter-spacing: .01em;
+            padding: 30px 16px 50px;
+            letter-spacing: 0.01em;
         }
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            opacity: .15;
-            background-image:
-                linear-gradient(to right, rgba(143,160,199,.15) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(143,160,199,.15) 1px, transparent 1px);
-            background-size: 24px 24px;
-            mask-image: radial-gradient(circle at 50% 20%, black, transparent 75%);
-        }
-        .wrap { max-width: 980px; margin: 0 auto; position: relative; z-index: 1; }
+        .wrap { max-width: 920px; margin: 0 auto; }
         .hero {
-            background: linear-gradient(145deg, rgba(15,20,38,.94), rgba(10,14,26,.9));
-            border: 1px solid var(--line);
-            border-radius: 18px;
-            padding: 20px 22px;
-            margin-bottom: 16px;
-            box-shadow: 0 20px 50px rgba(2,7,20,.45);
-            animation: rise .45s ease-out;
+            border-top: 2px solid var(--ink);
+            padding-top: 18px;
+            margin-bottom: 22px;
         }
         h1 {
-            margin: 0 0 8px 0;
-            font-size: clamp(24px, 4vw, 32px);
-            font-weight: 700;
-            letter-spacing: .02em;
-            text-shadow: 0 0 26px rgba(24,240,255,.22);
+            margin: 0;
+            font-family: "Tiempos Headline", "Iowan Old Style", "Times New Roman", serif;
+            font-size: clamp(34px, 6vw, 58px);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            line-height: 0.98;
         }
-        .sub { color: var(--muted); margin: 0; line-height: 1.5; }
-        .layout {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 14px;
+        .sub {
+            margin: 12px 0 0;
+            font-size: 16px;
+            color: var(--muted);
+            max-width: 680px;
+            line-height: 1.6;
+        }
+        .meta {
+            margin-top: 14px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pill {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 5px 11px;
+            font-size: 12px;
+            color: #2c2c2c;
+            background: #fff;
         }
         .card {
-            background: linear-gradient(155deg, var(--panel-soft), var(--panel));
+            background: var(--panel);
             border: 1px solid var(--line);
             border-radius: 16px;
-            padding: 16px 16px 14px;
-            box-shadow: 0 12px 30px rgba(2,7,20,.35);
-            animation: rise .55s ease-out;
+            padding: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
         }
-        .card h3 {
-            margin: 0 0 10px 0;
-            font-size: 15px;
-            text-transform: uppercase;
-            letter-spacing: .08em;
-            color: #c8d4f6;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--muted);
+        .card + .card { margin-top: 16px; }
+        .title {
+            margin: 0 0 6px;
             font-size: 13px;
             text-transform: uppercase;
-            letter-spacing: .08em;
+            letter-spacing: 0.12em;
+            color: #4f4f4f;
         }
-        input[type="file"] {
-            width: 100%;
-            margin-bottom: 10px;
-            color: var(--text);
-            background: #0a0f20;
-            border: 1px dashed #314168;
-            border-radius: 10px;
-            padding: 10px;
-        }
-        button {
-            background: linear-gradient(95deg, var(--accent), #57f6ff);
-            color: #001319;
-            border: 0;
-            border-radius: 10px;
-            padding: 10px 15px;
-            font-weight: 800;
-            letter-spacing: .04em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
-            box-shadow: 0 0 0 rgba(24,240,255,0);
-        }
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 24px rgba(24,240,255,.3);
-            filter: brightness(1.03);
-        }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .actions { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
-        .ghost {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid #2f3a5d;
-            box-shadow: none;
+        .hint {
+            margin: 0 0 14px;
+            font-size: 14px;
+            color: var(--muted);
         }
         .dropzone {
-            border: 1px dashed #33456f;
+            border: 1px dashed #c9c9c3;
             border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 10px;
-            background: rgba(11,17,35,.55);
-            transition: border-color .15s ease, background .15s ease;
+            padding: 14px;
+            margin-bottom: 12px;
+            background: #fcfcfb;
+            color: #444;
+            font-size: 14px;
         }
         .dropzone.active {
-            border-color: var(--accent);
-            background: rgba(24,240,255,.08);
+            border-color: #999;
+            background: #f2f2ee;
         }
-        .muted { color: var(--muted); }
-        .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
-        .pill {
-            border: 1px solid #33456f;
-            border-radius: 999px;
-            padding: 6px 11px;
-            color: var(--muted);
-            font-size: 12px;
-            background: rgba(18,26,48,.55);
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button, .link-btn {
+            border-radius: 11px;
+            border: 1px solid #c7c7c1;
+            padding: 10px 13px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #fff;
+            color: #111;
+        }
+        button.primary {
+            background: #111;
+            border-color: #111;
+            color: #fff;
+        }
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
         }
         .progress {
-            width: 100%;
-            height: 9px;
+            margin-top: 12px;
+            height: 8px;
             border-radius: 999px;
-            background: #121a30;
+            background: #ededea;
             overflow: hidden;
-            margin-top: 10px;
-            border: 1px solid #243458;
         }
         .bar {
-            height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, var(--accent), var(--accent-2));
-            transition: width .14s linear;
-            box-shadow: 0 0 20px rgba(24,240,255,.45);
+            height: 100%;
+            background: linear-gradient(90deg, #202020, #545454);
+            transition: width .15s linear;
         }
-        #status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; line-height: 1.45; }
+        #status {
+            min-height: 20px;
+            margin-top: 10px;
+            color: #404040;
+            font-size: 14px;
+        }
         #status.ok { color: var(--ok); }
         #status.err { color: var(--err); }
-        .files { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow: auto; }
-        .files li { margin: 0; border-bottom: 1px solid #202c4a; }
-        .files li:last-child { border-bottom: 0; }
-        .files a {
-            color: #7ff7ff;
-            text-decoration: none;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 8px;
+        #selection {
+            margin: 5px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .files {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            border-top: 1px solid var(--line);
+        }
+        .files li {
+            border-bottom: 1px solid var(--line);
+            padding: 12px 0;
+        }
+        .batch-head {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            padding: 10px 2px;
-            transition: color .15s ease, padding-left .15s ease;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 8px;
         }
-        .files a:hover { color: var(--accent); padding-left: 8px; }
-        .file-meta { color: var(--muted); font-size: 12px; }
-        code {
-            background: rgba(16,26,48,.85);
-            border: 1px solid #2a3a63;
-            border-radius: 7px;
-            padding: 2px 6px;
-            font-family: "JetBrains Mono", "Fira Code", monospace;
-            font-size: .92em;
+        .file-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            padding: 7px 0;
         }
-        @keyframes rise {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
+        a.file-link {
+            color: #121212;
+            text-decoration: none;
+            font-size: 14px;
+            overflow-wrap: anywhere;
         }
-        @media (max-width: 860px) {
-            .layout { grid-template-columns: 1fr; }
-            .hero, .card { padding: 14px; border-radius: 14px; }
-            body { padding: 16px 12px; }
+        a.file-link:hover { text-decoration: underline; }
+        .size { color: var(--muted); font-size: 12px; }
+        .hidden-input { display: none; }
+        @media (max-width: 760px) {
+            body { padding: 22px 12px 34px; }
+            .card { padding: 14px; }
         }
     </style>
 </head>
@@ -275,45 +252,47 @@ async fn root_page() -> Html<&'static str> {
     <div class="wrap">
         <section class="hero">
             <h1>NeuroLink</h1>
-            <p class="sub">Minimal cyberpunk file transfer. Upload from browser, share from <code>/shared</code>.</p>
-            <div class="row">
-                <span class="pill">API: <code>/transfer/*</code></span>
-                <span class="pill">Health: <code>/health</code></span>
-                <span class="pill">Downloads: <code>/shared/&lt;filename&gt;</code></span>
+            <p class="sub">Fast local transfers with clean batch uploads. Pick a folder, upload once, share single files or a full batch zip.</p>
+            <div class="meta">
+                <span class="pill">Rust Runtime</span>
+                <span class="pill">Batch Download: ZIP</span>
+                <span class="pill">API: /transfer/*</span>
             </div>
         </section>
 
-        <div class="layout">
-            <section class="card">
-                <h3>Upload</h3>
-                <label for="fileInput">Choose file</label>
-                <div id="dropzone" class="dropzone">
-                    <input id="fileInput" type="file" multiple />
-                    <div class="muted">Drop files here or click to browse.</div>
-                </div>
-                <div class="actions">
-                    <button id="uploadBtn">Upload Batch</button>
-                    <button id="refreshBtn" class="ghost" type="button">Refresh</button>
-                </div>
-                <div class="progress"><div id="bar" class="bar"></div></div>
-                <div id="status"></div>
-                <p id="selection" class="muted"></p>
-            </section>
+        <section class="card">
+            <h2 class="title">Upload</h2>
+            <p class="hint">Primary flow: click Upload Folder, then Start Upload.</p>
+            <div id="dropzone" class="dropzone">Drop files/folder here or use the buttons below.</div>
+            <input id="folderInput" class="hidden-input" type="file" webkitdirectory directory multiple />
+            <input id="fileInput" class="hidden-input" type="file" multiple />
+            <div class="actions">
+                <button id="pickFolderBtn" class="primary" type="button">Upload Folder</button>
+                <button id="pickFilesBtn" type="button">Select Files</button>
+                <button id="startUploadBtn" type="button">Start Upload</button>
+                <button id="refreshBtn" type="button">Refresh</button>
+            </div>
+            <div class="progress"><div id="bar" class="bar"></div></div>
+            <div id="status"></div>
+            <p id="selection"></p>
+        </section>
 
-            <section class="card">
-                <h3>Upload Batches</h3>
-                <p class="muted">Each upload click creates one time-based batch.</p>
-                <ul id="files" class="files"></ul>
-            </section>
-        </div>
+        <section class="card">
+            <h2 class="title">Upload Batches</h2>
+            <p class="hint">Newest batches first. Every upload run creates one batch.</p>
+            <ul id="files" class="files"></ul>
+        </section>
     </div>
 
     <script>
         const CHUNK_SIZE = 1024 * 1024;
+        const folderInput = document.getElementById('folderInput');
         const fileInput = document.getElementById('fileInput');
-        const dropzone = document.getElementById('dropzone');
-        const uploadBtn = document.getElementById('uploadBtn');
+        const pickFolderBtn = document.getElementById('pickFolderBtn');
+        const pickFilesBtn = document.getElementById('pickFilesBtn');
+        const startUploadBtn = document.getElementById('startUploadBtn');
         const refreshBtn = document.getElementById('refreshBtn');
+        const dropzone = document.getElementById('dropzone');
         const bar = document.getElementById('bar');
         const statusEl = document.getElementById('status');
         const selectionEl = document.getElementById('selection');
@@ -321,8 +300,8 @@ async fn root_page() -> Html<&'static str> {
         let selectedFiles = [];
 
         function setStatus(text, kind) {
+            statusEl.className = kind || '';
             statusEl.textContent = text;
-            statusEl.className = kind ? kind : '';
         }
 
         function formatBytes(size) {
@@ -337,72 +316,49 @@ async fn root_page() -> Html<&'static str> {
                 return;
             }
             const total = selectedFiles.reduce((n, f) => n + f.size, 0);
-            selectionEl.textContent = `${selectedFiles.length} file(s) selected · ${formatBytes(total)}`;
+            selectionEl.textContent = `${selectedFiles.length} files selected · ${formatBytes(total)}`;
+        }
+
+        function setFilesFromList(list) {
+            selectedFiles = Array.from(list || []);
+            updateSelection();
         }
 
         async function refreshFiles() {
             const res = await fetch('/uploads');
             const json = await res.json();
+
             if (!res.ok || !json.success || !Array.isArray(json.data)) {
-                filesEl.innerHTML = '<li class="muted">Failed to load files.</li>';
+                filesEl.innerHTML = '<li>Failed to load uploads.</li>';
                 return;
             }
 
             if (json.data.length === 0) {
-                filesEl.innerHTML = '<li class="muted">No files yet.</li>';
+                filesEl.innerHTML = '<li>No uploads yet.</li>';
                 return;
             }
 
-            filesEl.innerHTML = json.data.map(batch => {
+            filesEl.innerHTML = json.data.map((batch) => {
                 const when = new Date(batch.uploaded_at).toLocaleString();
-                const items = batch.files.map(file => `
-                    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 2px;border-bottom:1px solid #202c4a;">
-                        <a href="/shared/${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer" style="padding:0;">
-                            ${file.name}
-                        </a>
-                        <div class="file-meta" style="display:flex;gap:6px;align-items:center;">
-                            ${formatBytes(file.size)}
-                            <button type="button" class="ghost chunk-btn" style="padding:4px 8px;font-size:11px;"
-                                data-file-name="${encodeURIComponent(file.name)}">Chunk</button>
-                        </div>
+                const items = batch.files.map((file) => `
+                    <div class="file-row">
+                        <a class="file-link" href="/shared/${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer">${file.name}</a>
+                        <span class="size">${formatBytes(file.size)}</span>
                     </div>
                 `).join('');
-                return `<li>
-                    <div class="file-meta" style="padding:8px 2px; display:flex; justify-content:space-between; gap:8px; align-items:center;">
-                        <span>${when} · ${batch.files.length} file(s)</span>
-                        <a class="ghost" style="padding:4px 8px;font-size:11px;text-decoration:none;color:inherit;"
-                            href="/download/batch/${encodeURIComponent(batch.batch_id)}">Download Batch</a>
-                    </div>
-                    ${items}
-                </li>`;
-                })
-                .join('');
-
-            filesEl.querySelectorAll('.chunk-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const encoded = btn.dataset.fileName;
-                    if (encoded) downloadChunk(encoded);
-                });
-            });
-        }
-
-        function downloadChunk(encodedName) {
-            const idxRaw = prompt('Chunk index (0-based):', '0');
-            if (idxRaw === null) return;
-            const sizeRaw = prompt('Chunk size in bytes:', '1048576');
-            if (sizeRaw === null) return;
-            const idx = parseInt(idxRaw, 10);
-            const size = parseInt(sizeRaw, 10);
-            if (Number.isNaN(idx) || idx < 0 || Number.isNaN(size) || size <= 0) {
-                setStatus('Invalid chunk values', 'err');
-                return;
-            }
-            window.open(`/download/chunk/${encodedName}?index=${idx}&chunk_size=${size}`, '_blank');
+                return `
+                    <li>
+                        <div class="batch-head">
+                            <span>${when} · ${batch.files.length} file(s)</span>
+                            <a class="link-btn" href="/download/batch/${encodeURIComponent(batch.batch_id)}">Download ZIP</a>
+                        </div>
+                        ${items}
+                    </li>
+                `;
+            }).join('');
         }
 
         async function uploadSingleFile(file, batchId, doneBytes, totalBytes) {
-            setStatus(`Initializing ${file.name}...`, '');
             const initRes = await fetch('/transfer/init', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -415,33 +371,22 @@ async fn root_page() -> Html<&'static str> {
             });
             const initJson = await initRes.json();
             if (!initRes.ok || !initJson.success || !initJson.data) {
-                throw new Error(initJson.error || 'Failed to initialize transfer');
+                throw new Error(initJson.error || 'Init failed');
             }
 
             const transferId = initJson.data.transfer_id;
             const totalChunks = initJson.data.total_chunks;
-
             for (let idx = 0; idx < totalChunks; idx++) {
-                const start = idx * CHUNK_SIZE;
-                const end = Math.min(file.size, start + CHUNK_SIZE);
-                const chunkBlob = file.slice(start, end);
-
+                const chunkBlob = file.slice(idx * CHUNK_SIZE, Math.min(file.size, (idx + 1) * CHUNK_SIZE));
                 const form = new FormData();
                 form.append('transfer_id', transferId);
                 form.append('chunk_index', idx.toString());
                 form.append('chunk', chunkBlob, `${file.name}.part${idx}`);
-
                 const chunkRes = await fetch('/transfer/chunk', { method: 'POST', body: form });
                 const chunkJson = await chunkRes.json();
-                if (!chunkRes.ok || !chunkJson.success) {
-                    throw new Error(chunkJson.error || `Chunk ${idx + 1} failed`);
-                }
-
-                const pct = Math.floor(((idx + 1) / totalChunks) * 100);
+                if (!chunkRes.ok || !chunkJson.success) throw new Error(chunkJson.error || `Chunk ${idx + 1} failed`);
                 const uploaded = doneBytes + Math.min(file.size, (idx + 1) * CHUNK_SIZE);
-                const overallPct = Math.floor((uploaded / totalBytes) * 100);
-                bar.style.width = `${overallPct}%`;
-                setStatus(`Uploading ${file.name}... ${pct}%`, '');
+                bar.style.width = `${Math.floor((uploaded / totalBytes) * 100)}%`;
             }
 
             const doneRes = await fetch('/transfer/complete', {
@@ -450,51 +395,43 @@ async fn root_page() -> Html<&'static str> {
                 body: JSON.stringify({ transfer_id: transferId })
             });
             const doneJson = await doneRes.json();
-            if (!doneRes.ok || !doneJson.success) {
-                throw new Error(doneJson.error || 'Failed to complete transfer');
-            }
-
+            if (!doneRes.ok || !doneJson.success) throw new Error(doneJson.error || 'Complete failed');
         }
 
-        async function uploadBatch(files) {
-            const batchId = `batch_${Date.now()}`;
-            const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
-            let doneBytes = 0;
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                setStatus(`Uploading ${i + 1}/${files.length}: ${file.name}`, '');
-                await uploadSingleFile(file, batchId, doneBytes, totalBytes);
-                doneBytes += file.size;
-            }
-            setStatus(`Batch upload complete (${files.length} file(s))`, 'ok');
-            await refreshFiles();
-        }
-
-        uploadBtn.addEventListener('click', async () => {
+        async function uploadBatch() {
             if (selectedFiles.length === 0) {
-                setStatus('Select files first.', 'err');
+                setStatus('Select files or a folder first.', 'err');
                 return;
             }
 
-            uploadBtn.disabled = true;
+            startUploadBtn.disabled = true;
             bar.style.width = '0%';
-            setStatus('', '');
+            const batchId = `batch_${Date.now()}`;
+            const totalBytes = selectedFiles.reduce((n, f) => n + f.size, 0);
+            let doneBytes = 0;
             try {
-                await uploadBatch(selectedFiles);
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    setStatus(`Uploading ${i + 1}/${selectedFiles.length}: ${file.name}`);
+                    await uploadSingleFile(file, batchId, doneBytes, totalBytes);
+                    doneBytes += file.size;
+                }
+                setStatus(`Batch upload complete (${selectedFiles.length} files)`, 'ok');
+                await refreshFiles();
             } catch (err) {
                 setStatus(err.message || 'Upload failed', 'err');
             } finally {
-                uploadBtn.disabled = false;
+                startUploadBtn.disabled = false;
             }
-        });
+        }
 
+        pickFolderBtn.addEventListener('click', () => folderInput.click());
+        pickFilesBtn.addEventListener('click', () => fileInput.click());
+        startUploadBtn.addEventListener('click', uploadBatch);
         refreshBtn.addEventListener('click', refreshFiles);
 
-        fileInput.addEventListener('change', () => {
-            selectedFiles = fileInput.files ? Array.from(fileInput.files) : [];
-            updateSelection();
-        });
+        folderInput.addEventListener('change', () => setFilesFromList(folderInput.files));
+        fileInput.addEventListener('change', () => setFilesFromList(fileInput.files));
 
         dropzone.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -504,10 +441,7 @@ async fn root_page() -> Html<&'static str> {
         dropzone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropzone.classList.remove('active');
-            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                selectedFiles = Array.from(e.dataTransfer.files);
-                updateSelection();
-            }
+            if (e.dataTransfer?.files?.length) setFilesFromList(e.dataTransfer.files);
         });
 
         updateSelection();
@@ -573,8 +507,8 @@ async fn download_batch(
     }
 
     let storage_path = manager.storage_path();
-    let mut cmd = Command::new("tar");
-    cmd.arg("-czf").arg("-").arg("-C").arg(storage_path);
+    let mut cmd = Command::new("zip");
+    cmd.arg("-q").arg("-").current_dir(storage_path);
     for file in &files {
         cmd.arg(&file.name);
     }
@@ -585,14 +519,14 @@ async fn download_batch(
             let stderr = String::from_utf8_lossy(&output.stderr);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to build archive: {}", stderr),
+                format!("Failed to build zip archive: {}", stderr),
             )
                 .into_response();
         }
-        Err(e) => {
+        Err(err) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to run tar: {}", e),
+                format!("Failed to run zip: {}", err),
             )
                 .into_response();
         }
@@ -602,40 +536,13 @@ async fn download_batch(
     *response.status_mut() = StatusCode::OK;
     response
         .headers_mut()
-        .insert(header::CONTENT_TYPE, HeaderValue::from_static("application/gzip"));
+        .insert(header::CONTENT_TYPE, HeaderValue::from_static("application/zip"));
 
-    let disposition = format!("attachment; filename=\"upload-{}.tar.gz\"", batch_id);
+    let disposition = format!("attachment; filename=\"upload-{}.zip\"", batch_id);
     if let Ok(v) = HeaderValue::from_str(&disposition) {
         response.headers_mut().insert(header::CONTENT_DISPOSITION, v);
     }
     response
-}
-
-async fn download_chunk(
-    State(manager): State<Arc<TransferManager>>,
-    Path(filename): Path<String>,
-    Query(query): Query<ChunkDownloadQuery>,
-) -> Response {
-    match manager
-        .read_file_chunk(&filename, query.index, query.chunk_size)
-        .await
-    {
-        Ok(bytes) => {
-            let mut response = Response::new(Body::from(bytes));
-            *response.status_mut() = StatusCode::OK;
-            response.headers_mut().insert(
-                header::CONTENT_TYPE,
-                HeaderValue::from_static("application/octet-stream"),
-            );
-            let out_name = format!("{}.part{}", filename, query.index);
-            let disposition = format!("attachment; filename=\"{}\"", out_name);
-            if let Ok(v) = HeaderValue::from_str(&disposition) {
-                response.headers_mut().insert(header::CONTENT_DISPOSITION, v);
-            }
-            response
-        }
-        Err(e) => (StatusCode::BAD_REQUEST, format!("Chunk download failed: {}", e)).into_response(),
-    }
 }
 
 async fn init_transfer(

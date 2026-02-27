@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs;
 use tokio::fs::ReadDir;
-use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt, SeekFrom};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 use sha2::{Sha256, Digest};
 use tracing::{info, debug};
@@ -356,35 +356,6 @@ impl TransferManager {
             .collect();
         files.sort_by(|a, b| a.uploaded_at.cmp(&b.uploaded_at));
         files
-    }
-
-    pub async fn read_file_chunk(
-        &self,
-        filename: &str,
-        chunk_index: usize,
-        chunk_size: usize,
-    ) -> Result<Vec<u8>> {
-        if chunk_size == 0 {
-            return Err(anyhow::anyhow!("chunk size must be greater than 0"));
-        }
-
-        let path = self.storage_path.join(filename);
-        let mut file = fs::File::open(path).await?;
-        let meta = file.metadata().await?;
-        let file_len = meta.len();
-
-        let start = chunk_index as u64 * chunk_size as u64;
-        if start >= file_len {
-            return Err(anyhow::anyhow!("chunk index out of range"));
-        }
-
-        let remaining = (file_len - start) as usize;
-        let read_len = remaining.min(chunk_size);
-        let mut buffer = vec![0u8; read_len];
-
-        file.seek(SeekFrom::Start(start)).await?;
-        file.read_exact(&mut buffer).await?;
-        Ok(buffer)
     }
 
     pub async fn read_file(&self, filename: &str) -> Result<Vec<u8>> {

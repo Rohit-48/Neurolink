@@ -43,11 +43,15 @@ When you launch commands in a terminal, each CLI prints a colored ASCII banner:
 
 ## Core parity (both apps)
 
-- Upload batches via web UI
+- Upload batches via web UI (folder-first flow + multi-file fallback)
 - List uploaded files and batches
 - Download individual files
-- Download batch archive
-- Download file chunk by index/size
+- Download batch archive (ZIP)
+
+## Download differences
+
+- Rust (`neurolinkrs` / `neurolinkd`): supports file and batch ZIP downloads only.
+- Express (`neurolink`): keeps chunk download API endpoint for compatibility.
 
 ## Common endpoints (both apps)
 
@@ -57,7 +61,10 @@ When you launch commands in a terminal, each CLI prints a colored ASCII banner:
 - `GET /uploads`
 - `GET /shared/:filename`
 - `GET /download/batch/:batch_id`
-- `GET /download/chunk/:filename?index=<n>&chunk_size=<bytes>`
 - `POST /transfer/init`
 - `POST /transfer/chunk`
 - `POST /transfer/complete`
+
+Express-only endpoint:
+
+- `GET /download/chunk/:filename?index=<n>&chunk_size=<bytes>`
