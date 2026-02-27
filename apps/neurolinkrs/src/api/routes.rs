@@ -68,7 +68,7 @@ async fn root_page() -> Html<&'static str> {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NeuroLink</title>
+    <title>NeuroLinkd</title>
     <style>
         :root {
             --bg: #f7f7f4;
@@ -233,6 +233,20 @@ async fn root_page() -> Html<&'static str> {
             align-items: center;
             padding: 7px 0;
         }
+        .file-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mini-btn {
+            border-radius: 8px;
+            border: 1px solid #c7c7c1;
+            padding: 4px 8px;
+            font-size: 11px;
+            text-decoration: none;
+            color: #111;
+            background: #fff;
+        }
         a.file-link {
             color: #121212;
             text-decoration: none;
@@ -251,10 +265,10 @@ async fn root_page() -> Html<&'static str> {
 <body>
     <div class="wrap">
         <section class="hero">
-            <h1>NeuroLink</h1>
+            <h1>NeuroLinkd</h1>
             <p class="sub">Fast local transfers with clean batch uploads. Pick a folder, upload once, share single files or a full batch zip.</p>
             <div class="meta">
-                <span class="pill">Rust Runtime</span>
+                <span class="pill">Rust Runtime (neurolinkd)</span>
                 <span class="pill">Batch Download: ZIP</span>
                 <span class="pill">API: /transfer/*</span>
             </div>
@@ -343,7 +357,10 @@ async fn root_page() -> Html<&'static str> {
                 const items = batch.files.map((file) => `
                     <div class="file-row">
                         <a class="file-link" href="/shared/${encodeURIComponent(file.name)}" target="_blank" rel="noreferrer">${file.name}</a>
-                        <span class="size">${formatBytes(file.size)}</span>
+                        <div class="file-actions">
+                            <span class="size">${formatBytes(file.size)}</span>
+                            <a class="mini-btn" href="/shared/${encodeURIComponent(file.name)}" download="${file.name}">Download</a>
+                        </div>
                     </div>
                 `).join('');
                 return `
