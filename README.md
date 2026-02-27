@@ -45,6 +45,12 @@ When you launch commands in a terminal, each CLI prints a colored ASCII banner:
 | --- | --- |
 | ![neurolink banner](docs/images/neurolink-banner.png) | ![neurolinkrs banner](docs/images/neurolinkrs-banner.png) |
 
+## Images
+
+| neurolink UI | neurolinkd UI |
+| --- | --- |
+| ![neurolink ui](docs/images/neurolink.png) | ![neurolinkd ui](docs/images/neurolinkd.png) |
+
 ## Demo Video
 
 <video src="docs/video/neurolink_demo_both_servers.mp4" controls loop muted playsinline width="100%"></video>
