@@ -45,6 +45,10 @@ When you launch commands in a terminal, each CLI prints a colored ASCII banner:
 | --- | --- |
 | ![neurolink banner](docs/images/neurolink-banner.png) | ![neurolinkrs banner](docs/images/neurolinkrs-banner.png) |
 
+## Demo Video
+
+- `docs/video/neurolink_demo_both_servers.mp4`
+
 ## Core parity (both apps)
 
 - Upload batches via web UI (folder-first flow + multi-file fallback)
