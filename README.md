@@ -47,7 +47,7 @@ When you launch commands in a terminal, each CLI prints a colored ASCII banner:
 
 ## Demo Video
 
-[![Watch demo video](docs/images/neurolink-demo-preview.jpg)](docs/video/neurolink_demo_both_servers.mp4)
+[![Watch demo video](docs/images/neurolink-demo-preview.gif)](docs/video/neurolink_demo_both_servers.mp4)
 
 [Download demo video](docs/video/neurolink_demo_both_servers.mp4)
 
