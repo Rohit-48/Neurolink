@@ -39,14 +39,17 @@ function uiHtml() {
   <title>NeuroLink (Express)</title>
   <style>
     :root{
-      --bg-0:#080b14; --bg-1:#0d1426;
-      --surface:#111b33; --surface-2:#0f182f;
-      --line:#2b3d66; --line-soft:#22314f;
-      --text:#eaf0ff; --muted:#93a3c9;
-      --accent:#25f2ff; --accent-2:#6bf8ff; --accent-warm:#ffb02d;
-      --ok:#2fe9a5; --err:#ff5f84;
-      --shadow:0 16px 36px rgba(2,8,24,.42);
-      --radius:16px;
+      --bg:#0a0a0a;
+      --surface:#111111;
+      --surface-2:#151515;
+      --line:#2b2b2b;
+      --line-soft:#202020;
+      --text:#f5f5f5;
+      --muted:#a8a8a8;
+      --ok:#d9d9d9;
+      --err:#bdbdbd;
+      --radius:14px;
+      --shadow:0 14px 34px rgba(0,0,0,.42);
     }
     *{box-sizing:border-box}
     body{
@@ -54,23 +57,24 @@ function uiHtml() {
       color:var(--text);
       font-family:"Sora","Inter",system-ui,sans-serif;
       background:
-        radial-gradient(1000px 600px at 10% -10%, rgba(37,242,255,.16), transparent 55%),
-        radial-gradient(800px 500px at 110% -15%, rgba(255,176,45,.14), transparent 52%),
-        linear-gradient(145deg,var(--bg-0),var(--bg-1));
+        radial-gradient(800px 500px at 10% -10%, rgba(255,255,255,.07), transparent 56%),
+        linear-gradient(145deg,#050505,var(--bg));
       min-height:100vh;
       padding:26px 16px 34px;
       letter-spacing:.01em;
     }
     body::before{
       content:"";
-      position:fixed; inset:0; pointer-events:none;
-      opacity:.12;
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      opacity:.1;
       background-image:
-        linear-gradient(to right, rgba(147,163,201,.22) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(147,163,201,.22) 1px, transparent 1px);
-      background-size:30px 30px;
-      mask-image:radial-gradient(circle at 50% 18%, black, transparent 70%);
-      -webkit-mask-image:radial-gradient(circle at 50% 18%, black, transparent 70%);
+        linear-gradient(to right, rgba(255,255,255,.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.15) 1px, transparent 1px);
+      background-size:28px 28px;
+      mask-image:radial-gradient(circle at 50% 18%, black, transparent 72%);
+      -webkit-mask-image:radial-gradient(circle at 50% 18%, black, transparent 72%);
     }
     .wrap{max-width:1040px; margin:0 auto; position:relative; z-index:1}
     .hero,.card{
@@ -82,52 +86,77 @@ function uiHtml() {
     .hero{padding:20px; margin-bottom:14px}
     .layout{display:grid; grid-template-columns:1.08fr .92fr; gap:12px}
     .card{padding:15px}
-    h1{margin:0; font-size:clamp(26px,4vw,38px); line-height:1.02}
-    h3{margin:0 0 11px; font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:#ced9f8}
-    .hero-sub{margin:.55rem 0 0; color:var(--muted); font-size:14px}
-    .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:11px}
+    h1{
+      margin:0;
+      font-size:clamp(27px,4vw,40px);
+      line-height:1.02;
+      letter-spacing:.02em;
+      font-weight:700;
+    }
+    h3{
+      margin:0 0 11px;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      color:#d8d8d8;
+    }
+    .hero-sub{margin:.58rem 0 0; color:var(--muted); font-size:14px}
+    .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
     .chip{
-      border:1px solid #3b4d7a;
+      border:1px solid #3a3a3a;
       border-radius:999px;
       padding:6px 11px;
-      background:rgba(18,29,55,.66);
+      background:rgba(255,255,255,.03);
       color:var(--muted);
       font-size:12px;
     }
     .drop{
-      border:1px dashed #435886;
+      border:1px dashed #3f3f3f;
       border-radius:12px;
       padding:12px;
       margin-bottom:9px;
-      background:rgba(12,18,36,.58);
+      background:rgba(255,255,255,.02);
       transition:border-color .16s ease, background .16s ease;
     }
-    .drop.active{border-color:var(--accent); background:rgba(37,242,255,.08)}
+    .drop.active{
+      border-color:#ffffff;
+      background:rgba(255,255,255,.06);
+    }
     input[type=file]{width:100%; color:var(--text); margin-bottom:8px}
     .actions{display:flex; gap:8px}
     button{
-      border:0;
+      border:1px solid #3c3c3c;
       border-radius:10px;
       padding:9px 12px;
       font-weight:700;
       cursor:pointer;
-      transition:transform .12s ease, box-shadow .12s ease, filter .12s ease, border-color .12s ease;
+      color:#f3f3f3;
+      background:#1a1a1a;
+      transition:transform .12s ease, background .12s ease, border-color .12s ease;
     }
-    button:hover{transform:translateY(-1px); filter:brightness(1.03)}
+    button:hover{
+      transform:translateY(-1px);
+      background:#212121;
+      border-color:#555555;
+    }
     .primary{
-      background:linear-gradient(95deg,var(--accent),var(--accent-2));
-      color:#001319;
-      box-shadow:0 10px 24px rgba(37,242,255,.32);
+      background:#f3f3f3;
+      color:#0f0f0f;
+      border-color:#f3f3f3;
+    }
+    .primary:hover{
+      background:#ffffff;
+      border-color:#ffffff;
     }
     .ghost{
       background:transparent;
       color:var(--text);
-      border:1px solid #3a4a75;
+      border:1px solid #3a3a3a;
     }
     .progress{
       height:9px;
-      background:#192543;
-      border:1px solid #2e4069;
+      background:#131313;
+      border:1px solid #303030;
       border-radius:999px;
       overflow:hidden;
       margin-top:10px;
@@ -135,7 +164,7 @@ function uiHtml() {
     .bar{
       height:100%;
       width:0%;
-      background:linear-gradient(90deg,var(--accent),var(--accent-warm));
+      background:linear-gradient(90deg,#f0f0f0,#9d9d9d);
       transition:width .12s linear;
     }
     .muted{color:var(--muted)}
@@ -151,7 +180,7 @@ function uiHtml() {
       overflow:auto;
       border:1px solid var(--line-soft);
       border-radius:12px;
-      background:rgba(9,14,28,.48);
+      background:rgba(0,0,0,.22);
     }
     .files li{
       border-bottom:1px solid var(--line-soft);
@@ -161,11 +190,11 @@ function uiHtml() {
     .row{display:flex; justify-content:space-between; align-items:center; gap:8px}
     .meta{color:var(--muted); font-size:12px}
     a{
-      color:#9af9ff;
+      color:#f3f3f3;
       text-decoration:none;
-      transition:color .12s ease;
+      transition:opacity .12s ease;
     }
-    a:hover{color:var(--accent)}
+    a:hover{opacity:.7}
     @media (max-width:860px){
       .layout{grid-template-columns:1fr}
       .hero,.card{padding:13px}
@@ -177,7 +206,7 @@ function uiHtml() {
   <div class="wrap">
     <section class="hero">
       <h1>NeuroLink</h1>
-      <p class="hero-sub">Modern local file transfer with batch uploads, archive download, and chunk extraction.</p>
+      <p class="hero-sub">Minimal monochrome file transfer with batch upload and chunk download.</p>
       <div class="chip-row">
         <span class="chip">GET /health</span>
         <span class="chip">GET /uploads</span>
