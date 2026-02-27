@@ -41,6 +41,10 @@ When you launch commands in a terminal, each CLI prints a colored ASCII banner:
 - `neurolinkrs` -> `NEUROLINKRS 2.0 - Rust Service`
 - `neurolinkd` -> `NEUROLINKD 2.0 - Rust Daemon`
 
+| neurolink | neurolinkrs |
+| --- | --- |
+| ![neurolink banner](docs/images/neurolink-banner.png) | ![neurolinkrs banner](docs/images/neurolinkrs-banner.png) |
+
 ## Core parity (both apps)
 
 - Upload batches via web UI (folder-first flow + multi-file fallback)

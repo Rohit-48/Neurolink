@@ -119,6 +119,7 @@ function uiHtml() {
       color:#111;
     }
     .primary{background:#111;border-color:#111;color:#fff}
+    #pickFilesBtn{background:#111;border-color:#111;color:#fff}
     button:disabled{opacity:.55;cursor:not-allowed}
     .progress{margin-top:12px;height:8px;border-radius:999px;background:#ededea;overflow:hidden}
     .bar{height:100%;width:0%;background:linear-gradient(90deg,#202020,#545454);transition:width .15s linear}
@@ -130,8 +131,10 @@ function uiHtml() {
     .files li{border-bottom:1px solid var(--line);padding:12px 0}
     .batch-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:12px;margin-bottom:8px}
     .file-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0}
+    .file-actions{display:flex;align-items:center;gap:8px}
     a.file-link{color:#121212;text-decoration:none;font-size:14px;overflow-wrap:anywhere}
     a.file-link:hover{text-decoration:underline}
+    .mini-btn{border-radius:8px;border:1px solid #c7c7c1;padding:4px 8px;font-size:11px;text-decoration:none;color:#111;background:#fff}
     .size{color:var(--muted);font-size:12px}
     .hidden-input{display:none}
     @media (max-width:760px){body{padding:22px 12px 34px}.card{padding:14px}}
@@ -213,7 +216,10 @@ function uiHtml() {
         const items = batch.files.map((file) =>
           '<div class="file-row">' +
             '<a class="file-link" href="/shared/' + encodeURIComponent(file.name) + '" target="_blank" rel="noreferrer">' + file.name + "</a>" +
-            '<span class="size">' + formatBytes(file.size) + "</span>" +
+            '<div class="file-actions">' +
+              '<span class="size">' + formatBytes(file.size) + "</span>" +
+              '<a class="mini-btn" href="/shared/' + encodeURIComponent(file.name) + '" download="' + file.name + '">Download</a>' +
+            "</div>" +
           "</div>"
         ).join("");
 

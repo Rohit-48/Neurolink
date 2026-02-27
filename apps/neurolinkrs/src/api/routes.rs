@@ -177,6 +177,11 @@ async fn root_page() -> Html<&'static str> {
             border-color: #111;
             color: #fff;
         }
+        #pickFilesBtn {
+            background: #111;
+            border-color: #111;
+            color: #fff;
+        }
         button:disabled {
             opacity: 0.55;
             cursor: not-allowed;
