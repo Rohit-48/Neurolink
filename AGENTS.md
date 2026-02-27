@@ -11,7 +11,7 @@ See `README.md` for run/build commands.
 
 ### System dependencies
 
-- **Rust stable >= 1.85** (needed for `edition2024` support required by transitive dependency `getrandom`). The pre-installed Rust 1.83 is too old; run `rustup update stable` if builds fail with `feature edition2024 is required`.
+- **Rust stable >= 1.85** (needed for `edition2024` support required by transitive dependency `getrandom`). The pre-installed Rust 1.83 is too old; run `rustup update stable && rustup default stable` if builds fail with `feature edition2024 is required`. Note: `rustup default stable` is required because the VM default is pinned to `1.83.0-x86_64-unknown-linux-gnu`, so merely updating the stable toolchain does not switch the active default.
 - **libssl-dev** and **pkg-config** are required for compiling test dependencies (`openssl-sys`). Without them, `cargo test` fails but `cargo build` (which uses `rustls`) succeeds.
 
 ### Running the servers
