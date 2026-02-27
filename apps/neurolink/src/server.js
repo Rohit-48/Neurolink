@@ -39,96 +39,145 @@ function uiHtml() {
   <title>NeuroLink (Express)</title>
   <style>
     :root{
-      --bg-0:#070912;--bg-1:#0d1324;--bg-2:#0f1830;
-      --panel:#121b34;--panel-soft:#0f172d;--line:#2d3c68;
-      --text:#e8efff;--muted:#93a3c9;
-      --accent:#1ff2ff;--accent-2:#5cf7ff;--accent-warm:#ffb020;
-      --ok:#2ee8a3;--err:#ff5d7c;
-      --shadow:0 18px 40px rgba(2,7,22,.45);
+      --bg-0:#080b14; --bg-1:#0d1426;
+      --surface:#111b33; --surface-2:#0f182f;
+      --line:#2b3d66; --line-soft:#22314f;
+      --text:#eaf0ff; --muted:#93a3c9;
+      --accent:#25f2ff; --accent-2:#6bf8ff; --accent-warm:#ffb02d;
+      --ok:#2fe9a5; --err:#ff5f84;
+      --shadow:0 16px 36px rgba(2,8,24,.42);
+      --radius:16px;
     }
     *{box-sizing:border-box}
     body{
-      margin:0;color:var(--text);
+      margin:0;
+      color:var(--text);
       font-family:"Sora","Inter",system-ui,sans-serif;
       background:
-        radial-gradient(1100px 700px at 12% -10%, rgba(31,242,255,.18), transparent 52%),
-        radial-gradient(900px 600px at 110% -10%, rgba(255,176,32,.14), transparent 48%),
-        linear-gradient(145deg,var(--bg-0),var(--bg-1) 55%,var(--bg-2));
-      padding:24px 16px 34px;
+        radial-gradient(1000px 600px at 10% -10%, rgba(37,242,255,.16), transparent 55%),
+        radial-gradient(800px 500px at 110% -15%, rgba(255,176,45,.14), transparent 52%),
+        linear-gradient(145deg,var(--bg-0),var(--bg-1));
       min-height:100vh;
+      padding:26px 16px 34px;
       letter-spacing:.01em;
     }
     body::before{
-      content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;
+      content:"";
+      position:fixed; inset:0; pointer-events:none;
+      opacity:.12;
       background-image:
-        linear-gradient(to right, rgba(147,163,201,.2) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(147,163,201,.2) 1px, transparent 1px);
-      background-size:28px 28px;
-      -webkit-mask-image:radial-gradient(circle at 50% 15%, black, transparent 72%);
-      mask-image:radial-gradient(circle at 50% 15%, black, transparent 72%);
+        linear-gradient(to right, rgba(147,163,201,.22) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(147,163,201,.22) 1px, transparent 1px);
+      background-size:30px 30px;
+      mask-image:radial-gradient(circle at 50% 18%, black, transparent 70%);
+      -webkit-mask-image:radial-gradient(circle at 50% 18%, black, transparent 70%);
     }
-    .wrap{max-width:1040px;margin:0 auto;position:relative;z-index:1}
+    .wrap{max-width:1040px; margin:0 auto; position:relative; z-index:1}
     .hero,.card{
-      background:linear-gradient(155deg,var(--panel),var(--panel-soft));
+      background:linear-gradient(160deg,var(--surface),var(--surface-2));
       border:1px solid var(--line);
-      border-radius:16px;
+      border-radius:var(--radius);
       box-shadow:var(--shadow);
     }
-    .hero{margin-bottom:14px;padding:18px}
-    .layout{display:grid;grid-template-columns:1.16fr .84fr;gap:12px}
-    .card{padding:14px}
-    h1{margin:0;font-size:clamp(24px,4vw,34px);line-height:1.04}
-    h3{margin:2px 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:#c9d6f7}
-    .hero-sub{margin:.5rem 0 0;color:var(--muted);font-size:14px}
-    .chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .hero{padding:20px; margin-bottom:14px}
+    .layout{display:grid; grid-template-columns:1.08fr .92fr; gap:12px}
+    .card{padding:15px}
+    h1{margin:0; font-size:clamp(26px,4vw,38px); line-height:1.02}
+    h3{margin:0 0 11px; font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:#ced9f8}
+    .hero-sub{margin:.55rem 0 0; color:var(--muted); font-size:14px}
+    .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:11px}
     .chip{
-      border:1px solid #3a4b78;border-radius:999px;padding:6px 10px;
-      background:rgba(18,28,54,.6);color:var(--muted);font-size:12px
+      border:1px solid #3b4d7a;
+      border-radius:999px;
+      padding:6px 11px;
+      background:rgba(18,29,55,.66);
+      color:var(--muted);
+      font-size:12px;
     }
     .drop{
-      border:1px dashed #3a4a75;border-radius:12px;padding:12px;margin-bottom:9px;
-      background:rgba(10,16,34,.58);transition:border-color .15s ease,background .15s ease
+      border:1px dashed #435886;
+      border-radius:12px;
+      padding:12px;
+      margin-bottom:9px;
+      background:rgba(12,18,36,.58);
+      transition:border-color .16s ease, background .16s ease;
     }
-    .drop.active{border-color:var(--accent);background:rgba(31,242,255,.08)}
-    input[type=file]{width:100%;color:var(--text);margin-bottom:8px}
+    .drop.active{border-color:var(--accent); background:rgba(37,242,255,.08)}
+    input[type=file]{width:100%; color:var(--text); margin-bottom:8px}
+    .actions{display:flex; gap:8px}
     button{
-      border:0;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer;
-      transition:transform .12s ease,box-shadow .12s ease,filter .12s ease
+      border:0;
+      border-radius:10px;
+      padding:9px 12px;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .12s ease, box-shadow .12s ease, filter .12s ease, border-color .12s ease;
     }
-    button:hover{transform:translateY(-1px);filter:brightness(1.03)}
+    button:hover{transform:translateY(-1px); filter:brightness(1.03)}
     .primary{
-      background:linear-gradient(95deg,var(--accent),var(--accent-2));color:#001319;
-      box-shadow:0 10px 26px rgba(31,242,255,.32)
+      background:linear-gradient(95deg,var(--accent),var(--accent-2));
+      color:#001319;
+      box-shadow:0 10px 24px rgba(37,242,255,.32);
     }
-    .ghost{background:transparent;color:var(--text);border:1px solid #3a4a75}
+    .ghost{
+      background:transparent;
+      color:var(--text);
+      border:1px solid #3a4a75;
+    }
     .progress{
-      height:9px;background:#182342;border:1px solid #2c3b66;border-radius:999px;
-      overflow:hidden;margin-top:10px
+      height:9px;
+      background:#192543;
+      border:1px solid #2e4069;
+      border-radius:999px;
+      overflow:hidden;
+      margin-top:10px;
     }
     .bar{
-      height:100%;width:0%;
+      height:100%;
+      width:0%;
       background:linear-gradient(90deg,var(--accent),var(--accent-warm));
-      transition:width .12s linear
+      transition:width .12s linear;
     }
     .muted{color:var(--muted)}
-    #status{min-height:20px;margin-top:8px;font-size:14px}
+    #status{min-height:20px; margin-top:8px; font-size:14px}
     #selection{font-size:13px}
-    .ok{color:var(--ok)} .err{color:var(--err)}
-    .files{list-style:none;padding:0;margin:0;max-height:460px;overflow:auto}
-    .files li{border-bottom:1px solid #243154;padding:9px 0}
+    .ok{color:var(--ok)}
+    .err{color:var(--err)}
+    .files{
+      list-style:none;
+      margin:0;
+      padding:0;
+      max-height:460px;
+      overflow:auto;
+      border:1px solid var(--line-soft);
+      border-radius:12px;
+      background:rgba(9,14,28,.48);
+    }
+    .files li{
+      border-bottom:1px solid var(--line-soft);
+      padding:10px 11px;
+    }
     .files li:last-child{border-bottom:0}
-    .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-    .meta{color:var(--muted);font-size:12px}
-    a{color:#8ef8ff;text-decoration:none}
+    .row{display:flex; justify-content:space-between; align-items:center; gap:8px}
+    .meta{color:var(--muted); font-size:12px}
+    a{
+      color:#9af9ff;
+      text-decoration:none;
+      transition:color .12s ease;
+    }
     a:hover{color:var(--accent)}
-    @media (max-width:860px){.layout{grid-template-columns:1fr}.hero,.card{padding:12px}}
+    @media (max-width:860px){
+      .layout{grid-template-columns:1fr}
+      .hero,.card{padding:13px}
+      .actions{flex-wrap:wrap}
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <section class="hero">
       <h1>NeuroLink</h1>
-      <p class="hero-sub">Express runtime · batch uploads, archive download, and per-file chunk extraction.</p>
+      <p class="hero-sub">Modern local file transfer with batch uploads, archive download, and chunk extraction.</p>
       <div class="chip-row">
         <span class="chip">GET /health</span>
         <span class="chip">GET /uploads</span>
@@ -137,12 +186,12 @@ function uiHtml() {
     </section>
     <div class="layout">
       <section class="card">
-        <h3 style="margin-top:0">Upload</h3>
+        <h3>Upload</h3>
         <div id="drop" class="drop">
           <input id="fileInput" type="file" multiple />
           <div class="muted">Drop files here or browse.</div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div class="actions">
           <button id="uploadBtn" class="primary">Upload Batch</button>
           <button id="refreshBtn" class="ghost" type="button">Refresh</button>
         </div>
@@ -151,7 +200,7 @@ function uiHtml() {
         <div id="selection" class="muted"></div>
       </section>
       <section class="card">
-        <h3 style="margin-top:0">Upload Batches</h3>
+        <h3>Upload Batches</h3>
         <ul id="files" class="files"></ul>
       </section>
     </div>
