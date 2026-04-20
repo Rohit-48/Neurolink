@@ -135,12 +135,28 @@ async fn main() {
     info!("Note: 0.0.0.0 is a listen address, not a browser URL.");
 
     // Start server with graceful shutdown
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    
-    axum::serve(listener, app)
+    let listener = match tokio::net::TcpListener::bind(&addr).await {
+        Ok(listener) => listener,
+        Err(err) if err.kind() == std::io::ErrorKind::AddrInUse => {
+            eprintln!(
+                "Port {} is already in use. Stop the old server or run neurolinkd --port <free-port>.",
+                port
+            );
+            std::process::exit(1);
+        }
+        Err(err) => {
+            eprintln!("Failed to bind {}: {}", addr, err);
+            std::process::exit(1);
+        }
+    };
+
+    if let Err(err) = axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
-        .unwrap();
+    {
+        eprintln!("Server error: {}", err);
+        std::process::exit(1);
+    }
 
     info!("Server shutdown complete");
 }

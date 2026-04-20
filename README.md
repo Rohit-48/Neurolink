@@ -25,6 +25,23 @@ Rust daemon command (`neurolinkd`, default `3001`):
 npm run dev:neurolinkd
 ```
 
+## Mobile/LAN Access
+
+Use the `Mobile/LAN URL` printed by the command, not `localhost` from your phone.
+
+Example:
+
+```text
+http://192.168.0.101:3000
+http://192.168.0.101:3001
+```
+
+On NixOS, ports must also be allowed in the firewall:
+
+```nix
+networking.firewall.allowedTCPPorts = [ 3000 3001 8080 5173 ];
+```
+
 ## Build
 
 Rust release build:

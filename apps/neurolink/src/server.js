@@ -30,6 +30,14 @@ function formatIso(dateLike) {
   }
 }
 
+function detectLanIps() {
+  return Object.values(os.networkInterfaces())
+    .flat()
+    .filter((addr) => addr && addr.family === "IPv4" && !addr.internal)
+    .map((addr) => addr.address)
+    .filter((ip) => !ip.startsWith("127.") && !ip.startsWith("172.17."));
+}
+
 function uiHtml() {
   return `<!doctype html>
 <html lang="en">
@@ -516,9 +524,25 @@ export async function startNeurolink({ port = 3000, storage = "./shared" } = {})
     }));
   });
 
-  app.listen(port, "0.0.0.0", () => {
+  const server = app.listen(port, "0.0.0.0", () => {
     console.log(`NeuroLink Express listening on http://0.0.0.0:${port}`);
     console.log(`Local URL: http://localhost:${port}`);
+    const lanIps = detectLanIps();
+    if (lanIps.length) {
+      for (const ip of lanIps) console.log(`Mobile/LAN URL: http://${ip}:${port}`);
+    } else {
+      console.log(`Mobile/LAN URL: use your laptop IP, for example http://192.168.x.x:${port}`);
+    }
+    console.log("Note: localhost only works on this laptop. Use the Mobile/LAN URL on your phone.");
     console.log(`Storage: ${storage}`);
+  });
+
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`Port ${port} is already in use. Stop the old server or run neurolink --port <free-port>.`);
+      process.exit(1);
+    }
+    console.error("Failed to start NeuroLink Express:", err);
+    process.exit(1);
   });
 }
